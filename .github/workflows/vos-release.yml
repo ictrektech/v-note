@@ -88,6 +88,7 @@ jobs:
         run: |
           python3 -m unittest discover -s ictrek.app/scripts -p 'test_*.py'
           VITE_VOS=true bun test apps/api/src/vos-app.test.mjs apps/api/src/vos-auth.test.mjs apps/web/src/i18n/vos-i18n.test.mjs apps/web/src/i18n/vos-locale.test.mjs apps/web/src/lib/vos-resource-url.test.mjs
+          bun run build:plugin-api
           bun run typecheck
           VITE_VOS=true VITE_VOS_BASE_PATH=/app/com.ictrek.v-note/ bun run build:web
       - name: Resolve and verify published images
