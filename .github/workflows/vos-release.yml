@@ -1,0 +1,184 @@
+name: V-Note VOS Release
+
+on:
+  push:
+    tags: ['vos-v-note-v*']
+  workflow_dispatch:
+    inputs:
+      retry_version:
+        description: 'Retry an unpublished version using its existing trigger tag'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vos-v-note-release
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.retry_version == ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify Feishu access
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          body = json.dumps({'app_id': os.environ['FEISHU_APP_ID'], 'app_secret': os.environ['FEISHU_APP_SECRET']}).encode()
+          request = urllib.request.Request('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', data=body, headers={'Content-Type': 'application/json'})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              result = json.load(response)
+          if result.get('code') != 0 or not result.get('tenant_access_token'):
+              raise SystemExit('Feishu authentication failed')
+          request = urllib.request.Request('https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/Htotsn3oahO1zxt73YMcaB1zn8e/sheets/query', headers={'Authorization': 'Bearer ' + result['tenant_access_token']})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              sheets = json.load(response)
+          if sheets.get('code') != 0:
+              raise SystemExit('Cannot read release spreadsheet')
+          print('PASS: Feishu release spreadsheet accessible')
+          PY
+      - name: Verify App Store tunnel
+        env:
+          APPSTORE_IP: ${{ secrets.APPSTORE_IP }}
+          APPSTORE_TOKEN: ${{ secrets.APPSTORE_TOKEN }}
+        run: bash ictrek.app/scripts/appstore_tunnel.sh open
+      - name: Close App Store tunnel
+        if: always()
+        env:
+          APPSTORE_IP: ${{ secrets.APPSTORE_IP }}
+        run: bash ictrek.app/scripts/appstore_tunnel.sh close
+  release:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.retry_version != '')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Check release source
+        env:
+          RETRY_VERSION: ${{ inputs.retry_version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            VERSION="${GITHUB_REF_NAME#vos-v-note-v}"
+          else
+            VERSION="$RETRY_VERSION"
+          fi
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$(tr -d '[:space:]' < ictrek.app/VERSION)" == "$VERSION" ]]
+          [[ "$(git rev-parse "refs/tags/vos-v-note-v${VERSION}^{commit}")" == "$(git rev-parse HEAD)" ]]
+          if git rev-parse -q --verify "refs/tags/v${VERSION}^{commit}" >/dev/null; then
+            [[ "$(git rev-parse "refs/tags/v${VERSION}^{commit}")" == "$(git rev-parse HEAD)" ]] || { echo 'Public tag points to another commit' >&2; exit 1; }
+          fi
+          [[ "$(git diff-tree --no-commit-id --name-only -r HEAD)" == 'ictrek.app/VERSION' ]]
+          echo "VOS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "VNOTE_SOURCE_COMMIT=$(git rev-parse HEAD^)" >> "$GITHUB_ENV"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - name: Verify VOS integration
+        run: |
+          python3 -m unittest discover -s ictrek.app/scripts -p 'test_*.py'
+          VITE_VOS=true bun test apps/api/src/vos-app.test.mjs apps/api/src/vos-auth.test.mjs apps/web/src/i18n/vos-i18n.test.mjs apps/web/src/i18n/vos-locale.test.mjs apps/web/src/lib/vos-resource-url.test.mjs
+          bun run typecheck
+          VITE_VOS=true VITE_VOS_BASE_PATH=/app/com.ictrek.v-note/ bun run build:web
+      - name: Resolve and verify published images
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib
+          path = pathlib.Path.home() / '.feishu.components.json'
+          path.write_text(json.dumps({'feishu_app_id': os.environ['FEISHU_APP_ID'], 'feishu_app_secret': os.environ['FEISHU_APP_SECRET']}))
+          path.chmod(0o600)
+          PY
+          python3 ictrek.app/scripts/resolve_images.py "$VOS_RELEASE_VERSION" > "$RUNNER_TEMP/vnote-images.env"
+          source "$RUNNER_TEMP/vnote-images.env"
+          : > "$RUNNER_TEMP/verified-images.env"
+          for entry in "VNOTE_AMD_IMAGE linux/amd64 $VNOTE_AMD_IMAGE" "VNOTE_ARM_IMAGE linux/arm64 $VNOTE_ARM_IMAGE"; do
+            read -r variable platform image <<< "$entry"
+            docker pull --platform "$platform" "$image"
+            [[ "$(docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" == "$VNOTE_SOURCE_COMMIT" ]]
+            [[ "$(docker image inspect "$image" --format '{{ index .Config.Labels "com.ictrek.source-state" }}')" == clean ]]
+            digest="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}')"
+            [[ "$digest" == "${image%:*}@sha256:"* ]]
+            printf '%s=%s@%s\n' "$variable" "$image" "${digest#*@}" >> "$RUNNER_TEMP/verified-images.env"
+          done
+          cat "$RUNNER_TEMP/verified-images.env" >> "$GITHUB_ENV"
+      - name: Build pull package
+        run: |
+          PACKAGE_VERSION="$VOS_RELEASE_VERSION" bash ictrek.app/scripts/package.sh
+          sha256sum "ictrek.app/dist/v_note_${VOS_RELEASE_VERSION}_pull.tar" > "ictrek.app/dist/v_note_${VOS_RELEASE_VERSION}_pull.tar.sha256"
+      - name: Create release notes
+        run: |
+          cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
+          ## 主要更新
+
+          - V-Note 支持 VOS 单点登录、用户数据隔离和跟随平台语言。
+          - 提供 AMD64 与 ARM64 的 VOS 安装包。
+
+          ## Key Changes
+
+          - V-Note supports VOS single sign-on, per-user data isolation, and platform language settings.
+          - A VOS package is available for AMD64 and ARM64 devices.
+          NOTES
+      - name: Connect App Store
+        env:
+          APPSTORE_IP: ${{ secrets.APPSTORE_IP }}
+          APPSTORE_TOKEN: ${{ secrets.APPSTORE_TOKEN }}
+        run: bash ictrek.app/scripts/appstore_tunnel.sh open
+      - name: Guard existing App Store versions
+        run: python3 ictrek.app/scripts/check_appstore_version.py "$VOS_RELEASE_VERSION"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$VOS_RELEASE_VERSION"
+          if ! git rev-parse -q --verify "refs/tags/v${VERSION}^{commit}" >/dev/null; then
+            git tag "v${VERSION}" "$GITHUB_SHA"
+            git push origin "v${VERSION}"
+          fi
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            mkdir -p "$RUNNER_TEMP/published"
+            gh release download "v${VERSION}" --pattern "v_note_${VERSION}_pull.tar" --dir "$RUNNER_TEMP/published"
+            mkdir -p "$RUNNER_TEMP/expected" "$RUNNER_TEMP/actual"
+            tar -xf "ictrek.app/dist/v_note_${VERSION}_pull.tar" -C "$RUNNER_TEMP/expected"
+            tar -xf "$RUNNER_TEMP/published/v_note_${VERSION}_pull.tar" -C "$RUNNER_TEMP/actual"
+            tar -xzf "$RUNNER_TEMP/expected/app.tar.gz" -C "$RUNNER_TEMP/expected"
+            tar -xzf "$RUNNER_TEMP/actual/app.tar.gz" -C "$RUNNER_TEMP/actual"
+            rm "$RUNNER_TEMP/expected/app.tar.gz" "$RUNNER_TEMP/actual/app.tar.gz"
+            diff -qr "$RUNNER_TEMP/expected" "$RUNNER_TEMP/actual"
+            cp "$RUNNER_TEMP/published/v_note_${VERSION}_pull.tar" "ictrek.app/dist/v_note_${VERSION}_pull.tar"
+          else
+            gh release create "v${VERSION}" "ictrek.app/dist/v_note_${VERSION}_pull.tar" "ictrek.app/dist/v_note_${VERSION}_pull.tar.sha256" --verify-tag --latest --title "v${VERSION}" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+      - name: Publish and verify App Store package
+        run: |
+          set -euo pipefail
+          VERSION="$VOS_RELEASE_VERSION"
+          response="$(curl -fsS -F "package=@ictrek.app/dist/v_note_${VERSION}_pull.tar" -F 'force=true' -F 'channel=stable' http://127.0.0.1:18899/api/appstore/apps)"
+          RESPONSE="$response" python3 -c 'import json,os; assert json.loads(os.environ["RESPONSE"]).get("code") == 0'
+          curl -fsS --max-time 30 "http://127.0.0.1:18899/api/appstore/apps/com.ictrek.v-note?version=${VERSION}" > "$RUNNER_TEMP/appstore-readback.json"
+          python3 - <<'PY'
+          import json, os, pathlib
+          record = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'appstore-readback.json').read_text())
+          data = record.get('data') or {}
+          assert record.get('code') == 0 and data.get('id') == 'com.ictrek.v-note'
+          assert data.get('current_version') == os.environ['VOS_RELEASE_VERSION'] and (data.get('app_tar_gz') or {}).get('size', 0) > 0
+          PY
+      - name: Close App Store tunnel
+        if: always()
+        env:
+          APPSTORE_IP: ${{ secrets.APPSTORE_IP }}
+        run: bash ictrek.app/scripts/appstore_tunnel.sh close

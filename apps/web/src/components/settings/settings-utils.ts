@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 import { getConfiguredDesktopApiBaseUrl } from "@/lib/api";
+import { getAppBaseUrl, isVosBuild } from "@/lib/vos-mode";
 export { copyTextToClipboard } from "@/lib/clipboard";
 
 export const ALL_TOKEN_SCOPES = [
@@ -103,7 +104,7 @@ export const getEdgeEverBaseUrl = () => {
     return getConfiguredDesktopApiBaseUrl().replace(/\/+$/, "") || EDGE_EVER_SERVER_URL_PLACEHOLDER;
   }
 
-  return window.location.origin;
+  return isVosBuild ? getAppBaseUrl() : window.location.origin;
 };
 
 export const getMcpRemoteServerUrl = () => `${getEdgeEverBaseUrl()}/mcp`;

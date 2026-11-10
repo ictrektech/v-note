@@ -10,6 +10,7 @@ import {
   resolveInstanceAuthMode,
   type InstanceAuthMode,
 } from "./auth-state";
+import { isVosMode } from "./vos-mode";
 import type { ApiTokenRow } from "./api-token-routes";
 import type { AppContext, AuthContext, Bindings } from "./api-context";
 import { AppError } from "./app-error";
@@ -94,6 +95,7 @@ export const getInstanceAuthMode = async (
     allowUnauthenticated,
     hasBootstrapCredential: bootstrapCredentialConfigured,
     hasEnabledUser: Boolean(user),
+    vosMode: isVosMode(env),
   });
 };
 
@@ -247,9 +249,10 @@ export const createSession = async (
 };
 
 export const setSessionCookie = (c: AppContext, token: string, maxAge: number) => {
+  const forwardedProto = c.req.header("x-forwarded-proto")?.split(",", 1)[0]?.trim();
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: new URL(c.req.url).protocol === "https:",
+    secure: (forwardedProto || new URL(c.req.url).protocol) === "https:",
     sameSite: "Lax",
     path: "/",
     maxAge,

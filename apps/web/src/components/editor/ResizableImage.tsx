@@ -14,6 +14,7 @@ import {
 import { getAttachmentResourceId } from "@/lib/attachment-links";
 import { createMarkdownImagePasteRule } from "@/lib/markdown-image-paste";
 import { cn } from "@/lib/utils";
+import { resolveVosResourceUrl } from "@/lib/vos-mode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { isImageInGallery } from "./image-editing-context";
 import { createImageSelectionPlugin, imageSelectionKey } from "./image-selection";
@@ -198,7 +199,7 @@ const ResizableImageNodeView = ({
     editor.view.dispatch(editor.state.tr.setMeta(imageSelectionKey, null));
     window.dispatchEvent(new CustomEvent<ImagePreviewRequestDetail>(IMAGE_PREVIEW_SHOW_EVENT, {
       detail: {
-        url: src,
+        url: resolveVosResourceUrl(src),
         alt: title || alt,
       },
     }));
@@ -291,7 +292,7 @@ const ResizableImageNodeView = ({
     >
       <img
         ref={imageRef}
-        src={src}
+        src={resolveVosResourceUrl(src)}
         alt={alt}
         draggable={editable}
         data-drag-handle={editable ? "" : undefined}

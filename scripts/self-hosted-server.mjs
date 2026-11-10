@@ -11,6 +11,7 @@ import { isPublicMemoSharePagePath, renderPublicMemoSharePage } from "../apps/ap
 import { isPublicPagePath, PUBLIC_PAGE_HEADERS } from "../packages/shared/src/public-page-headers.ts";
 import { nodePublicFetch } from "../apps/api/src/node-public-network.ts";
 import { createSelfHostedStorageAdapter } from "../apps/api/src/self-hosted-storage-adapter.ts";
+import { isVosDisabledPagePath, isVosMode } from "../apps/api/src/vos-mode.ts";
 import { resolveSelfHostedConfig } from "./self-hosted-config.mjs";
 import { ensureSelfHostedCredentialSecrets, loadSelfHostedEnvironment } from "./self-hosted-secrets.mjs";
 
@@ -18,10 +19,11 @@ const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeEnvironment = await loadSelfHostedEnvironment(process.env);
 const config = resolveSelfHostedConfig(runtimeEnvironment, projectRoot);
 const { dataDirectory, databaseFile, resourcesDirectory, webDirectory } = config;
+const vosMode = isVosMode(runtimeEnvironment);
 
 await mkdir(dataDirectory, { recursive: true });
 await mkdir(resourcesDirectory, { recursive: true });
-await ensureSelfHostedCredentialSecrets(dataDirectory, runtimeEnvironment);
+await ensureSelfHostedCredentialSecrets(dataDirectory, runtimeEnvironment, { generateIfMissing: vosMode });
 const sqlite = new Database(databaseFile, { create: true });
 sqlite.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000;");
 
@@ -58,6 +60,7 @@ if (
   !existingUser
   && !hasBootstrapCredential(runtimeEnvironment.EDGE_EVER_AUTH_PASSWORD, runtimeEnvironment.EDGE_EVER_AUTH_PASSWORD_HASH)
   && !isUnauthenticatedAccessEnabled(runtimeEnvironment.EDGE_EVER_ALLOW_UNAUTHENTICATED)
+  && !vosMode
 ) {
   sqlite.close();
   throw new Error(
@@ -108,6 +111,9 @@ const env = {
   EDGE_EVER_CREDENTIALS_ENCRYPTION_KEY_PREVIOUS: runtimeEnvironment.EDGE_EVER_CREDENTIALS_ENCRYPTION_KEY_PREVIOUS,
   EDGE_EVER_DEMO_MODE: runtimeEnvironment.EDGE_EVER_DEMO_MODE,
   EDGE_EVER_ALLOW_UNAUTHENTICATED: runtimeEnvironment.EDGE_EVER_ALLOW_UNAUTHENTICATED,
+  EDGE_EVER_VOS_MODE: runtimeEnvironment.EDGE_EVER_VOS_MODE,
+  EDGE_EVER_VOS_USERINFO_URL: runtimeEnvironment.EDGE_EVER_VOS_USERINFO_URL,
+  EDGE_EVER_PUBLIC_BASE_PATH: runtimeEnvironment.EDGE_EVER_PUBLIC_BASE_PATH,
   EDGE_EVER_COMMUNITY_REGISTRY_URL: runtimeEnvironment.EDGE_EVER_COMMUNITY_REGISTRY_URL,
 };
 
@@ -165,6 +171,9 @@ const server = Bun.serve({
   idleTimeout: config.idleTimeout,
   async fetch(request) {
     const pathname = new URL(request.url).pathname;
+    if (vosMode && isVosDisabledPagePath(pathname)) {
+      return new Response("Not Found", { status: 404 });
+    }
     const loadAppShell = () => serveStatic(new Request(new URL("/index.html", request.url)));
     if (isNotebookSitePagePath(pathname)) {
       return renderNotebookSitePage(request, storage.db, loadAppShell);

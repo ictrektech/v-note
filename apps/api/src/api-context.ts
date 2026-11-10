@@ -34,6 +34,12 @@ export type Bindings = {
   EDGE_EVER_DEMO_MODE?: string;
   EDGE_EVER_LOCAL_DEMO_SEED?: string;
   EDGE_EVER_ALLOW_UNAUTHENTICATED?: string;
+  /** Enables VOS SSO, per-user provisioning, and the VOS feature boundary. */
+  EDGE_EVER_VOS_MODE?: string;
+  /** Internal VOS OAuth2 userinfo endpoint used to verify browser access tokens. */
+  EDGE_EVER_VOS_USERINFO_URL?: string;
+  /** Public mount path used by server-generated URLs in a VOS deployment. */
+  EDGE_EVER_PUBLIC_BASE_PATH?: string;
   /** HTTPS URL of the signed community registry. Unset disables the catalog. */
   EDGE_EVER_COMMUNITY_REGISTRY_URL?: string;
 };

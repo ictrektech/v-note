@@ -196,6 +196,7 @@ import { statusSettleMotion } from "@/lib/motion";
 import { MEMO_ID_REMAPPED_EVENT, MEMO_SYNC_ACKNOWLEDGED_EVENT } from "@/lib/sync-events";
 import type { EdgeEverRepository } from "@/lib/repository";
 import { cn, parseTagsText } from "@/lib/utils";
+import { isVosBuild } from "@/lib/vos-mode";
 
 Graph.registerConnector(MIND_MAP_CONNECTOR_NAME, mindMapConnector, true);
 
@@ -3651,7 +3652,7 @@ export const DiagramEditorPane = ({
                   <HistoryIcon className="h-4 w-4 text-slate-500" />
                   {t("editor.versionHistory")}
                 </DropdownMenuItem>
-                {!readOnly && (
+                {!isVosBuild && !readOnly && (
                   <DropdownMenuItem disabled={isLocalMemoId(memo.id)} onClick={() => setShareOpen(true)}>
                     <Share2 className="h-4 w-4 text-slate-500" />
                     {t(isLocalMemoId(memo.id) ? "sharing.afterSync" : "sharing.action")}
@@ -4011,7 +4012,7 @@ export const DiagramEditorPane = ({
             }}
           />
         ) : null}
-        <ShareMemoDialog memoId={memo.id} open={shareOpen} onOpenChange={setShareOpen} />
+        {!isVosBuild ? <ShareMemoDialog memoId={memo.id} open={shareOpen} onOpenChange={setShareOpen} /> : null}
         {memoIdCopyNotice ? (
           <ClipboardCopyNotice status={memoIdCopyNotice}>
             {t(memoIdCopyNotice === "copied" ? "editor.noteIdCopied" : "editor.noteIdCopyFailed", { id: memo.id })}

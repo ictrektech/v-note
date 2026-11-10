@@ -1,4 +1,4 @@
-export type InstanceAuthMode = "required" | "disabled" | "unconfigured";
+export type InstanceAuthMode = "required" | "disabled" | "unconfigured" | "vos";
 
 export const isUnauthenticatedAccessEnabled = (value: string | undefined) =>
   value?.trim().toLowerCase() === "true";
@@ -7,13 +7,19 @@ export const resolveInstanceAuthMode = ({
   allowUnauthenticated,
   hasBootstrapCredential,
   hasEnabledUser,
+  vosMode = false,
 }: {
   allowUnauthenticated: boolean;
   hasBootstrapCredential: boolean;
   hasEnabledUser: boolean;
+  vosMode?: boolean;
 }): InstanceAuthMode => {
   if (allowUnauthenticated) {
     return "disabled";
+  }
+
+  if (vosMode) {
+    return "vos";
   }
 
   if (hasBootstrapCredential || hasEnabledUser) {

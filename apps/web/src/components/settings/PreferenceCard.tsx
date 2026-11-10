@@ -77,6 +77,7 @@ import {
 } from "@/lib/editor-body-font";
 import { applyUiFontPreference, readUiFontPreference, writeUiFontPreference } from "@/lib/ui-font";
 import { syncPublishedNoteBodyFont } from "@/lib/published-note-body-font";
+import { isVosBuild } from "@/lib/vos-mode";
 import { useShowDescendantNotesPreference, writeShowDescendantNotesPreference } from "@/lib/descendant-notes-preference";
 import { LoginItemSettingsItem } from "./LoginItemSettingsItem";
 import { PicGoSettingsItem } from "./PicGoSettingsItem";
@@ -381,7 +382,7 @@ export const PreferenceCard = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="system">{t("settings.systemLanguage")}</SelectItem>
+                  <SelectItem value="system">{t("settings.systemLanguage")}{isVosBuild ? " (VOS)" : ""}</SelectItem>
                   {supportedLocales.map((locale) => (
                     <SelectItem key={locale} value={locale}>
                       {localeLabels[locale]}

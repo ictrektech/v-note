@@ -19,6 +19,7 @@ import { VideoAttachmentPlayer } from "@/components/attachments/VideoAttachmentP
 import { ButtonTooltip } from "@/components/ui/button-tooltip";
 import { useAttachmentByteSize } from "@/hooks/useAttachmentByteSize";
 import { isDesktopResourceRuntime, toApiResourceUrl, toDesktopResourceDownloadUrl } from "@/lib/desktop-resources";
+import { resolveVosResourceUrl } from "@/lib/vos-mode";
 import { cn } from "@/lib/utils";
 import { AttachmentTranscriptContext } from "./AttachmentTranscriptContext";
 import { AttachmentTranscriptInline } from "./AttachmentTranscriptInline";
@@ -37,7 +38,7 @@ const FileAttachmentNodeView = ({ node, updateAttributes }: NodeViewProps) => {
     ? node.attrs.filename
     : getAttachmentFilenameFromLabel(label);
   const mimeType = typeof node.attrs.mimeType === "string" ? node.attrs.mimeType : "";
-  const resolvedUrl = isDesktopResourceRuntime() ? url : toApiResourceUrl(url);
+  const resolvedUrl = isDesktopResourceRuntime() ? url : resolveVosResourceUrl(toApiResourceUrl(url));
   const downloadUrl = toDesktopResourceDownloadUrl(resolvedUrl, filename || label);
   const byteSize = useAttachmentByteSize(resolvedUrl, node.attrs.byteSize);
   const metadata = formatAttachmentMetadata(mimeType, filename || label, byteSize);

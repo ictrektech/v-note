@@ -175,6 +175,7 @@ import {
   getMemoSaveConflictInfoFromQueueItem,
 } from "@/lib/memo-save-conflict";
 import { copyResourceToClipboard, copyTextToClipboard } from "@/lib/clipboard";
+import { isVosBuild, resolveVosResourceUrl } from "@/lib/vos-mode";
 import { useNoteProseStylePreference } from "@/lib/note-prose-style-preference";
 import { createClientUuid } from "@/lib/client-id";
 import { isLocalMemoId, remapLocalDraftMemoId } from "@/lib/local-mirror";
@@ -677,7 +678,7 @@ const RichEditorPane = ({
       if (!shareMemoId) throw new Error("Memo share query requires a memo id");
       return api.getMemoShare(shareMemoId);
     },
-    enabled: Boolean(shareMemoId),
+    enabled: Boolean(shareMemoId) && !isVosBuild,
     retry: false,
     staleTime: 30_000,
   });
@@ -3509,8 +3510,8 @@ const RichEditorPane = ({
     target.kind === "image" ? t("editor.imageActions.failed") : t("editor.attachmentActions.failed"), [t]);
 
   const fetchResourceResponse = useCallback(async (target: ResourceMenuTarget) => {
-    const response = target.url.startsWith("edgeever-resource:") || target.url.startsWith("edgeever-staged:")
-      ? await fetch(target.url)
+    const response = isVosBuild || target.url.startsWith("edgeever-resource:") || target.url.startsWith("edgeever-staged:")
+      ? await fetch(resolveVosResourceUrl(target.url), { credentials: "same-origin" })
       : await api.getResourceResponse(target.url);
     if (!response.ok) throw new Error(response.statusText || getResourceActionFailure(target));
     return response;
@@ -3518,7 +3519,7 @@ const RichEditorPane = ({
 
   const downloadResourceDirectly = useCallback((target: ResourceMenuTarget) => {
     const anchor = document.createElement("a");
-    anchor.href = toDesktopResourceDownloadUrl(target.url, target.filename);
+    anchor.href = resolveVosResourceUrl(toDesktopResourceDownloadUrl(target.url, target.filename));
     anchor.download = target.filename;
     anchor.click();
   }, []);
@@ -4374,7 +4375,7 @@ const RichEditorPane = ({
               desktopFocusMode={desktopFocusMode}
               onToggleDesktopFocusMode={onToggleDesktopFocusMode}
             />
-            {!readOnly && (!mobileEditingActive || isMemoShared) && (
+            {!isVosBuild && !readOnly && (!mobileEditingActive || isMemoShared) && (
               <IconTooltip label={t(isLocalMemoId(memo.id) ? "sharing.afterSync" : isMemoShared ? "sharing.manage" : "sharing.action")}>
                 <Button
                   className="h-8 w-8 text-slate-500"
@@ -4504,7 +4505,7 @@ const RichEditorPane = ({
                   <History className="h-4 w-4 text-slate-500" />
                   {t("editor.versionHistory")}
                 </DropdownMenuItem>
-                {!readOnly && (
+                {!isVosBuild && !readOnly && (
                   <DropdownMenuItem
                     className={cn(
                       "flex h-9 w-full items-center gap-2 px-3 text-left text-xs hover:bg-slate-50 cursor-pointer outline-none",

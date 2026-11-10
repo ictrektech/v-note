@@ -1,8 +1,8 @@
-# syntax=docker/dockerfile:1.7
+ARG BUN_IMAGE=oven/bun:1.3.14-alpine
 # The web bundle and self-hosted server are plain JavaScript. Build them on the
 # runner's own architecture. QEMU arm64 hangs in Vite until the publish job hits
 # its timeout. The runtime image below still follows the target architecture.
-FROM --platform=$BUILDPLATFORM oven/bun:1.3.14-alpine AS manifests
+FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS manifests
 WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
@@ -27,8 +27,17 @@ RUN bun install --frozen-lockfile \
   --filter @edgeever/web
 
 FROM dependencies AS build
+ARG EDGE_EVER_BUILD_ID=unknown
+ARG VITE_VOS=false
+ARG VITE_VOS_BASE_PATH=/
+ARG ALPINE_MIRROR=dl-cdn.alpinelinux.org
+ENV EDGE_EVER_BUILD_ID=${EDGE_EVER_BUILD_ID} \
+    VITE_VOS=${VITE_VOS} \
+    VITE_VOS_BASE_PATH=${VITE_VOS_BASE_PATH}
 # Only stale template previews need the build browser; it stays out of runtime.
-RUN apk add --no-cache chromium nodejs
+# VOS builds use the checked-in previews; Vite still needs Node to load config.
+RUN sed -i "s|dl-cdn.alpinelinux.org|${ALPINE_MIRROR}|g" /etc/apk/repositories \
+  && if [ "$VITE_VOS" = "true" ]; then apk add --no-cache nodejs; else apk add --no-cache chromium nodejs; fi
 ENV EDGE_EVER_POSTER_CHROME_EXECUTABLE=/usr/bin/chromium
 COPY apps/api apps/api
 COPY apps/web apps/web
@@ -40,7 +49,7 @@ COPY tests/browser/poster-thumbnail-generator.html tests/browser/poster-thumbnai
 COPY tsconfig.json ./
 RUN bun run build:web && bun run build:self-hosted
 
-FROM oven/bun:1.3.14-alpine AS runtime
+FROM ${BUN_IMAGE} AS runtime
 WORKDIR /app
 ARG EDGE_EVER_BUILD_ID=unknown
 # Image build metadata for System information. Self-built images leave these

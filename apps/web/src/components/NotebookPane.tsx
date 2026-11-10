@@ -67,6 +67,7 @@ import {
 import type { EdgeEverRepository } from "@/lib/repository";
 import type { EdgeEverPluginHost } from "@/lib/plugins/plugin-host";
 import { statusSettleMotion } from "@/lib/motion";
+import { isVosBuild } from "@/lib/vos-mode";
 import { DesktopUpdateNotice } from "./DesktopUpdateNotice";
 import { useDeployedUpdateNotice } from "@/hooks/useDeployedUpdateNotice";
 import { PluginToolbarMenu } from "./plugins/PluginToolbarMenu";
@@ -693,7 +694,7 @@ export const NotebookPane = ({
   const notebookSharesQuery = useQuery({
     queryKey: ["notebook-shares", getConfiguredDesktopApiBaseUrl(), user?.id],
     queryFn: () => api.listNotebookShares(),
-    enabled: isOnline,
+    enabled: isOnline && !isVosBuild,
     retry: false,
     refetchOnMount: "always",
   });
@@ -1045,7 +1046,7 @@ export const NotebookPane = ({
       ) : (
       <footer className="edgeever-workspace-sidebar-footer border-t border-[var(--workspace-divider)] px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
         <div className="space-y-1">
-          <DropdownMenu>
+          {!isVosBuild ? <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className="flex h-9 w-full items-center gap-3 rounded-md px-3 text-left text-xs font-medium leading-5 text-slate-700 transition-colors duration-200 hover:bg-workspace-hover hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 data-[state=open]:bg-workspace-hover data-[state=open]:text-slate-950"
@@ -1251,7 +1252,7 @@ export const NotebookPane = ({
               </DropdownMenuGroup>
               </TooltipProvider>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> : null}
           <div className="flex items-center gap-1">
             <button
               onClick={onOpenSettings}
