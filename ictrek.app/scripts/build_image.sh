@@ -44,8 +44,8 @@ fi
 
 commit="${VNOTE_BUILD_COMMIT:-$(git -C "$root" rev-parse HEAD 2>/dev/null || printf unknown)}"
 source_state="${VNOTE_SOURCE_STATE:-unknown}"
-[[ "$commit" != "unknown" && "$source_state" =~ ^(clean|dirty)$ ]] || {
-  echo "Set VNOTE_BUILD_COMMIT and VNOTE_SOURCE_STATE (clean or dirty) to identify the source." >&2
+[[ "$commit" =~ ^[0-9a-f]{40}$ && "$source_state" =~ ^(clean|dirty)$ ]] || {
+  echo "Set VNOTE_BUILD_COMMIT to a full commit hash and VNOTE_SOURCE_STATE to clean or dirty." >&2
   exit 1
 }
 created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
