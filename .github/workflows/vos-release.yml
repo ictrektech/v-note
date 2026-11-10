@@ -73,13 +73,24 @@ jobs:
           fi
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           [[ "$(tr -d '[:space:]' < ictrek.app/VERSION)" == "$VERSION" ]]
-          [[ "$(git rev-parse "refs/tags/vos-v-note-v${VERSION}^{commit}")" == "$(git rev-parse HEAD)" ]]
+          TRIGGER="refs/tags/vos-v-note-v${VERSION}"
+          git rev-parse --verify "${TRIGGER}^{commit}" >/dev/null
+          [[ "$(git diff-tree --no-commit-id --name-only -r "$TRIGGER")" == 'ictrek.app/VERSION' ]]
+          git merge-base --is-ancestor "$TRIGGER" HEAD
+          SOURCE="$(python3 -c 'import json; print(json.load(open("ictrek.app/release-images.json"))["source_commit"])')"
+          [[ "$SOURCE" =~ ^[0-9a-f]{40}$ ]]
+          git merge-base --is-ancestor "$SOURCE" "$TRIGGER"
+          while IFS= read -r changed; do
+            case "$changed" in
+              .github/workflows/vos-release.yml|ictrek.app/VERSION|ictrek.app/release-images.json|ictrek.app/scripts/verify_release_images.py|ictrek.app/scripts/test_release_images.py|ictrek.app/README.md) ;;
+              *) echo "Retry changes require a new candidate: $changed" >&2; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$SOURCE" HEAD)
           if git rev-parse -q --verify "refs/tags/v${VERSION}^{commit}" >/dev/null; then
             [[ "$(git rev-parse "refs/tags/v${VERSION}^{commit}")" == "$(git rev-parse HEAD)" ]] || { echo 'Public tag points to another commit' >&2; exit 1; }
           fi
-          [[ "$(git diff-tree --no-commit-id --name-only -r HEAD)" == 'ictrek.app/VERSION' ]]
           echo "VOS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "VNOTE_SOURCE_COMMIT=$(git rev-parse HEAD^)" >> "$GITHUB_ENV"
+          echo "VNOTE_SOURCE_COMMIT=$SOURCE" >> "$GITHUB_ENV"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
@@ -104,17 +115,7 @@ jobs:
           path.chmod(0o600)
           PY
           python3 ictrek.app/scripts/resolve_images.py "$VOS_RELEASE_VERSION" > "$RUNNER_TEMP/vnote-images.env"
-          source "$RUNNER_TEMP/vnote-images.env"
-          : > "$RUNNER_TEMP/verified-images.env"
-          for entry in "VNOTE_AMD_IMAGE linux/amd64 $VNOTE_AMD_IMAGE" "VNOTE_ARM_IMAGE linux/arm64 $VNOTE_ARM_IMAGE"; do
-            read -r variable platform image <<< "$entry"
-            docker pull --platform "$platform" "$image"
-            [[ "$(docker image inspect "$image" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" == "$VNOTE_SOURCE_COMMIT" ]]
-            [[ "$(docker image inspect "$image" --format '{{ index .Config.Labels "com.ictrek.source-state" }}')" == clean ]]
-            digest="$(docker image inspect "$image" --format '{{index .RepoDigests 0}}')"
-            [[ "$digest" == "${image%:*}@sha256:"* ]]
-            printf '%s=%s@%s\n' "$variable" "$image" "${digest#*@}" >> "$RUNNER_TEMP/verified-images.env"
-          done
+          python3 ictrek.app/scripts/verify_release_images.py "$VOS_RELEASE_VERSION" "$VNOTE_SOURCE_COMMIT" "$RUNNER_TEMP/vnote-images.env" > "$RUNNER_TEMP/verified-images.env"
           cat "$RUNNER_TEMP/verified-images.env" >> "$GITHUB_ENV"
       - name: Build pull package
         run: |

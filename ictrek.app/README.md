@@ -37,14 +37,19 @@ For a release, commit and push the tested source first. On the matching hosts,
 build the same clean commit and publish `amd_<version>` with
 `--profile amd --sheet AMD_with_mxn100 --push` and `arm_<version>` with
 `--profile arm --sheet ARM_without_cuda --push`. These commands also register
-the tags in the VOS release spreadsheet. Verify both tags and the device upgrade
-before running `ictrek.app/scripts/update_version.sh patch` from a clean tree.
+the tags in the VOS release spreadsheet. Verify each pushed image's architecture,
+full source revision, clean label and registry digest on its build host. Record
+the exact version, source revision and tag@digest references in
+`ictrek.app/release-images.json` and commit that record. Verify both tags and the
+device upgrade before running `ictrek.app/scripts/update_version.sh patch` from a clean tree.
 The version bump must be the only change in its commit. The trigger tag starts
-`vos-release.yml`, which verifies both image source labels, pins their digests,
+`vos-release.yml`, which checks the recorded source revision and digests against
+the release spreadsheet,
 creates the GitHub Release and publishes its package to the VOS App Store.
 The workflow needs `FEISHU_APP_ID`, `FEISHU_APP_SECRET`, `APPSTORE_IP` and
 `APPSTORE_TOKEN` repository secrets. Monitor the workflow and verify its release
 and store readback; a pushed tag alone does not mean publication succeeded.
-To retry a failed publication, dispatch the workflow at the existing trigger tag
-with its version in `retry_version`; the workflow refuses a mismatched public tag
-or package.
+To retry a failed publication before a public tag exists, dispatch the workflow
+from the updated branch with its version in `retry_version`; it only accepts
+release-process changes since the image source. After GitHub publication, rerun
+the original workflow; it refuses a mismatched public tag or package.
