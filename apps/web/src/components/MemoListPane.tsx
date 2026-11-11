@@ -83,7 +83,6 @@ import { contentEnterMotion, paneEnterMotion } from "@/lib/motion";
 import { api } from "@/lib/api";
 import { isLocalMemoId } from "@/lib/local-mirror";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import { isVosBuild } from "@/lib/vos-mode";
 import {
   getMemoFilterOptions,
   getMemoSortOptions,
@@ -508,7 +507,7 @@ export const MemoListPane = ({
       if (!contextShareMemoId) throw new Error("Memo share query requires a memo id");
       return api.getMemoShare(contextShareMemoId);
     },
-    enabled: !isVosBuild && Boolean(contextShareMemoId && !isLocalMemoId(contextShareMemoId)),
+    enabled: Boolean(contextShareMemoId && !isLocalMemoId(contextShareMemoId)),
     retry: false,
     staleTime: 30_000,
   });
@@ -1650,19 +1649,15 @@ export const MemoListPane = ({
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator className="my-1 h-px bg-slate-100" />
-                  {!isVosBuild && (
-                    <>
-                      <DropdownMenuItem
-                        className="flex h-9 w-full items-center gap-2 px-3 text-left text-xs text-slate-700 hover:bg-slate-50 cursor-pointer outline-none"
-                        disabled={isLocalMemoId(memoContextMenu.memo.id)}
-                        onClick={() => requestContextDocumentAction("share")}
-                      >
-                        {contextShareQuery.data?.share ? <Globe className="h-4 w-4 text-slate-950" /> : <Share2 className="h-4 w-4 text-slate-500" />}
-                        {t(isLocalMemoId(memoContextMenu.memo.id) ? "sharing.afterSync" : contextShareQuery.data?.share ? "sharing.manage" : "sharing.action")}
-                      </DropdownMenuItem>
-                      {!isLocalMemoId(memoContextMenu.memo.id) && <MemoNotebookSites key={memoContextMenu.memo.id} memoId={memoContextMenu.memo.id} presentation="menu" />}
-                    </>
-                  )}
+                  <DropdownMenuItem
+                    className="flex h-9 w-full items-center gap-2 px-3 text-left text-xs text-slate-700 hover:bg-slate-50 cursor-pointer outline-none"
+                    disabled={isLocalMemoId(memoContextMenu.memo.id)}
+                    onClick={() => requestContextDocumentAction("share")}
+                  >
+                    {contextShareQuery.data?.share ? <Globe className="h-4 w-4 text-slate-950" /> : <Share2 className="h-4 w-4 text-slate-500" />}
+                    {t(isLocalMemoId(memoContextMenu.memo.id) ? "sharing.afterSync" : contextShareQuery.data?.share ? "sharing.manage" : "sharing.action")}
+                  </DropdownMenuItem>
+                  {!isLocalMemoId(memoContextMenu.memo.id) && <MemoNotebookSites key={memoContextMenu.memo.id} memoId={memoContextMenu.memo.id} presentation="menu" />}
                   {!memoContextMenu.memo.diagramKind && !memoContextMenu.memo.structuredTable && !memoContextMenu.memo.infographic && !memoContextMenu.memo.poster && (
                     <DropdownMenuItem
                       className="flex h-9 w-full items-center gap-2 px-3 text-left text-xs text-slate-700 hover:bg-slate-50 cursor-pointer outline-none"

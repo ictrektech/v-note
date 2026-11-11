@@ -1,7 +1,6 @@
 import hljs from "highlight.js/lib/common";
 import { MERMAID_THEME_PALETTES } from "@/components/ThemeProvider";
 import { renderThemedMermaidSvg } from "@/lib/mermaid-renderer";
-import { resolveVosResourceUrl } from "@/lib/vos-mode";
 
 const WINDOWS_RESERVED_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
 const EXPORT_FONT_FAMILY =
@@ -172,7 +171,7 @@ const blobToDataUrl = (blob: Blob) =>
 
 const resolveResourceUrl = (src: string) => {
   try {
-    return new URL(resolveVosResourceUrl(src), window.location.href).href;
+    return new URL(src, window.location.href).href;
   } catch {
     return src;
   }

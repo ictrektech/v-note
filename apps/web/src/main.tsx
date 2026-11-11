@@ -15,8 +15,6 @@ import { installEditorBodyFontFaces } from "./lib/editor-body-font-faces";
 import { applyUiFontPreference } from "./lib/ui-font";
 import { DesktopRendererErrorBoundary } from "./components/DesktopRendererErrorBoundary";
 import { reportDesktopRendererReadyAfterPaint } from "./lib/desktop-renderer-ready";
-import { VosAuthGate } from "./components/VosAuthGate";
-import { isVosBuild } from "./lib/vos-mode";
 import "./styles/globals.css";
 import "./styles/editor-body-fonts.css";
 
@@ -129,7 +127,6 @@ const mountApp = () => {
   applyEditorBodyFontPreference();
   applyUiFontPreference();
   const Router = isDesktopRenderer ? HashRouter : BrowserRouter;
-  const routerBasename = isDesktopRenderer ? undefined : (import.meta.env.BASE_URL.replace(/\/+$/, "") || "/");
 
   createRoot(root, {
     onUncaughtError(error, errorInfo) {
@@ -141,11 +138,9 @@ const mountApp = () => {
         <DesktopBootstrapReady />
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <VosAuthGate>
-              <Router basename={routerBasename}>
-                <App />
-              </Router>
-            </VosAuthGate>
+            <Router>
+              <App />
+            </Router>
           </ThemeProvider>
         </QueryClientProvider>
       </DesktopRendererErrorBoundary>
@@ -160,7 +155,7 @@ const bootstrap = async () => {
     if (reloading) {
       return;
     }
-  } else if (!isDesktopRenderer && !isVosBuild) {
+  } else if (!isDesktopRenderer) {
     registerProductionServiceWorker();
   }
 

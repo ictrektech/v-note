@@ -1,8 +1,8 @@
-ARG BUN_IMAGE=oven/bun:1.3.14-alpine
+# syntax=docker/dockerfile:1.7
 # The web bundle and self-hosted server are plain JavaScript. Build them on the
 # runner's own architecture. QEMU arm64 hangs in Vite until the publish job hits
 # its timeout. The runtime image below still follows the target architecture.
-FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS manifests
+FROM --platform=$BUILDPLATFORM oven/bun:1.3.14-alpine AS manifests
 WORKDIR /app
 
 COPY package.json bun.lock bunfig.toml ./
@@ -27,17 +27,8 @@ RUN bun install --frozen-lockfile \
   --filter @edgeever/web
 
 FROM dependencies AS build
-ARG EDGE_EVER_BUILD_ID=unknown
-ARG VITE_VOS=false
-ARG VITE_VOS_BASE_PATH=/
-ARG ALPINE_MIRROR=dl-cdn.alpinelinux.org
-ENV EDGE_EVER_BUILD_ID=${EDGE_EVER_BUILD_ID} \
-    VITE_VOS=${VITE_VOS} \
-    VITE_VOS_BASE_PATH=${VITE_VOS_BASE_PATH}
 # Only stale template previews need the build browser; it stays out of runtime.
-# VOS builds use the checked-in previews; Vite still needs Node to load config.
-RUN sed -i "s|dl-cdn.alpinelinux.org|${ALPINE_MIRROR}|g" /etc/apk/repositories \
-  && if [ "$VITE_VOS" = "true" ]; then apk add --no-cache nodejs; else apk add --no-cache chromium nodejs; fi
+RUN apk add --no-cache chromium nodejs
 ENV EDGE_EVER_POSTER_CHROME_EXECUTABLE=/usr/bin/chromium
 COPY apps/api apps/api
 COPY apps/web apps/web
@@ -45,11 +36,14 @@ COPY packages packages
 COPY docs docs
 COPY release-summary.json release-summary.json
 COPY scripts/self-hosted-config.mjs scripts/self-hosted-secrets.mjs scripts/self-hosted-server.mjs scripts/prepare-poster-thumbnails.mjs scripts/prepare-poster-thumbnails.d.mts scripts/
+COPY scripts/self-hosted-static.mjs scripts/precompress-self-hosted-assets.mjs scripts/
+COPY scripts/self-hosted-stage-stable-assets.mjs scripts/
 COPY tests/browser/poster-thumbnail-generator.html tests/browser/poster-thumbnail-generator.ts tests/browser/
 COPY tsconfig.json ./
-RUN bun run build:web && bun run build:self-hosted
+RUN bun run build:web && bun scripts/precompress-self-hosted-assets.mjs && bun run build:self-hosted
+RUN bun scripts/self-hosted-stage-stable-assets.mjs apps/web/dist /app/web-stable
 
-FROM ${BUN_IMAGE} AS runtime
+FROM oven/bun:1.3.14-alpine AS runtime
 WORKDIR /app
 ARG EDGE_EVER_BUILD_ID=unknown
 # Image build metadata for System information. Self-built images leave these
@@ -72,7 +66,8 @@ LABEL org.opencontainers.image.title="EdgeEver" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
 
 COPY --from=build /app/dist/self-hosted/self-hosted-server.js ./scripts/self-hosted-server.js
-COPY --from=build /app/apps/web/dist ./apps/web/dist
+COPY --link --from=build /app/web-stable /app/apps/web/dist
+COPY --link --from=build /app/apps/web/dist /app/apps/web/dist
 COPY migrations ./migrations
 COPY LICENSE ./LICENSE
 

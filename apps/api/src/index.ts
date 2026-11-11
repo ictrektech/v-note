@@ -76,7 +76,6 @@ import {
 import { registerTagRoutes } from "./tag-routes";
 import { registerTemplateRoutes } from "./template-routes";
 import { registerAuthRoutes } from "./auth-routes";
-import { registerVosAuthRoutes } from "./vos-auth";
 import { registerApiTokenRoutes } from "./api-token-routes";
 import { registerObjectStorageRoutes } from "./object-storage-routes";
 import { registerAiRoutes } from "./ai-routes";
@@ -136,7 +135,6 @@ import {
   DEFAULT_WORKSPACE_ID,
   ensureUserWorkspace,
 } from "./workspace-provisioning";
-import { isVosDisabledApiPath, isVosDisabledPagePath, isVosMode } from "./vos-mode";
 import {
   createAttachmentResource,
   createImageResource,
@@ -264,18 +262,6 @@ app.get("/api/health", async (c) => {
 // Reachability probe only. Not an API catalog. Agents should use MCP.
 app.get("/api/openapi.json", (c) => c.json(apiProbe));
 
-app.use("/api/*", async (c, next) => {
-  if (isVosMode(c.env) && isVosDisabledApiPath(c.req.path)) {
-    return apiError(
-      c,
-      "public_sharing_disabled",
-      "Public sharing and publishing are disabled on this VOS instance.",
-      404,
-    );
-  }
-  await next();
-});
-
 registerPublicShareRoutes(app);
 registerPublicNotebookShareRoutes(app);
 registerPublicTableFormRoutes(app);
@@ -294,10 +280,6 @@ registerAuthRoutes(app, {
   setSessionCookie: (...args) => setSessionCookie(...args),
   tooManyLoginAttempts: (...args) => tooManyLoginAttempts(...args),
   verifyLogin: (...args) => verifyLogin(...args),
-});
-registerVosAuthRoutes(app, {
-  createSession: (...args) => createSession(...args),
-  setSessionCookie: (...args) => setSessionCookie(...args),
 });
 registerUserRoutes(app, {
   authenticateRequest: (...args) => authenticateRequest(...args),
@@ -493,9 +475,6 @@ export const fetchEdgeEverApp = async (
 const worker = {
   async fetch(request: Request, env: WorkerBindings, ctx: ExecutionContext) {
     const { pathname } = new URL(request.url);
-    if (isVosMode(env) && isVosDisabledPagePath(pathname)) {
-      return new Response("Not Found", { status: 404 });
-    }
     const loadAppShell = () => env.ASSETS.fetch(new Request(new URL("/", request.url), { method: "GET" }));
     if (isNotebookSitePagePath(pathname)) {
       return (await renderNotebookSitePage(request, createCloudflareStorageAdapter(env).db, loadAppShell))!;

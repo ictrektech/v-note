@@ -2,7 +2,6 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { usePwaInstall } from "./PwaInstallContext";
 import { getAppAssetPath } from "@/lib/app-page-path";
-import { isVosBuild } from "@/lib/vos-mode";
 
 export const PwaIosPrompt = () => {
   const { t } = useTranslation();
@@ -28,7 +27,7 @@ export const PwaIosPrompt = () => {
 
         <div className="flex items-start gap-3.5 pr-6">
           <img
-            src={getAppAssetPath(isVosBuild ? "v-note-icon-192.png" : "favicon.svg", import.meta.env.BASE_URL)}
+            src={getAppAssetPath("favicon.svg", import.meta.env.BASE_URL)}
             alt=""
             aria-hidden="true"
             className="h-11 w-11 shrink-0"

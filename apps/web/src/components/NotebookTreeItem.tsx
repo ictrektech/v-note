@@ -15,7 +15,6 @@ import {
 import { NotebookAppearanceContent, notebookRowStyle } from "./NotebookAppearanceContent";
 import { cn } from "@/lib/utils";
 import { formatNotebookMemoCount, type Notebook } from "@edgeever/shared";
-import { isVosBuild } from "@/lib/vos-mode";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -72,7 +71,7 @@ export const NotebookTreeItem = ({
   const { t } = useTranslation();
   const [shareOpen, setShareOpen] = useState(false);
   const directlyShared = Boolean(sharedNotebookIds?.has(node.id));
-  const publicNotebook = !isVosBuild && (inheritedPublic || directlyShared);
+  const publicNotebook = inheritedPublic || directlyShared;
   const shareActionLabel = t("sharing.notebookTitle");
   const open = !collapsedNotebookIds.has(node.id);
   const hasChildren = node.children.length > 0;
@@ -352,15 +351,13 @@ export const NotebookTreeItem = ({
                     type="button" onClick={event => { event.stopPropagation(); setActionsOpen(false); onEditNotebookAppearance(node); }}>
                     <Palette className="h-4 w-4" />{t("notebookAppearance.title")}
                   </button>
-                  {!isVosBuild ? (
-                    <button
-                      className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-xs outline-none hover:bg-slate-100"
-                      type="button"
-                      onClick={event => { event.stopPropagation(); setActionsOpen(false); setShareOpen(true); }}
-                    >
-                      <Share2 className="h-4 w-4" />{shareActionLabel}
-                    </button>
-                  ) : null}
+                  <button
+                    className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-xs outline-none hover:bg-slate-100"
+                    type="button"
+                    onClick={event => { event.stopPropagation(); setActionsOpen(false); setShareOpen(true); }}
+                  >
+                    <Share2 className="h-4 w-4" />{shareActionLabel}
+                  </button>
                 {isInbox ? (
                   <>
                     <div className="-mx-1 my-1 h-px bg-slate-100" />
@@ -426,11 +423,9 @@ export const NotebookTreeItem = ({
           <ContextMenuItem className="flex h-9 items-center gap-2 px-3 text-xs cursor-pointer" onClick={() => onEditNotebookAppearance(node)}>
             <Palette className="h-4 w-4" />{t("notebookAppearance.title")}
           </ContextMenuItem>
-          {!isVosBuild ? (
-            <ContextMenuItem className="flex h-9 items-center gap-2 px-3 text-xs cursor-pointer" onClick={() => setShareOpen(true)}>
-              <Share2 className="h-4 w-4" />{shareActionLabel}
-            </ContextMenuItem>
-          ) : null}
+          <ContextMenuItem className="flex h-9 items-center gap-2 px-3 text-xs cursor-pointer" onClick={() => setShareOpen(true)}>
+            <Share2 className="h-4 w-4" />{shareActionLabel}
+          </ContextMenuItem>
           {isInbox ? (
             <>
               <ContextMenuSeparator className="my-1 h-px bg-slate-100" />
@@ -462,7 +457,7 @@ export const NotebookTreeItem = ({
         </ContextMenuContent>
       </ContextMenu>
 
-      {!isVosBuild && shareOpen ? (
+      {shareOpen ? (
         <Suspense fallback={null}>
           <ShareNotebookDialog notebookId={node.id} notebookName={node.name} inherited={inheritedPublic} open onOpenChange={setShareOpen} />
         </Suspense>

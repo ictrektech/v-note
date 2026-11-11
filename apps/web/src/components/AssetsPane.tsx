@@ -34,7 +34,6 @@ import { AppConfirmDialog } from "@/components/dialogs/ConfirmDialogs";
 import { ExecutionCenterButton } from "@/components/execution/ExecutionCenterButton";
 
 import { formatBytes } from "@/lib/format-bytes";
-import { resolveVosResourceUrl } from "@/lib/vos-mode";
 
 export { formatBytes } from "@/lib/format-bytes";
 
@@ -136,7 +135,7 @@ export const AssetsPane = ({ onClose, repository, onOpenExecutionCenter }: Asset
 
   const slides = useMemo(() => {
     return imageResources.map((r) => ({
-      src: resolveVosResourceUrl(r.url),
+      src: r.url,
       alt: r.filename || "",
       title: r.filename || "",
     }));
@@ -155,7 +154,7 @@ export const AssetsPane = ({ onClose, repository, onOpenExecutionCenter }: Asset
     } else if (isPdfAttachment(resource.mimeType, resource.filename)) {
       setPdfPreview(resource);
     } else {
-      window.open(resolveVosResourceUrl(resource.url), "_blank", "noopener,noreferrer");
+      window.open(resource.url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -348,14 +347,14 @@ export const AssetsPane = ({ onClose, repository, onOpenExecutionCenter }: Asset
                   >
                     {resource.kind === "image" ? (
                       <img
-                        src={resolveVosResourceUrl(resource.url)}
+                        src={resource.url}
                         alt={resource.filename || ""}
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-103"
                         loading="lazy"
                       />
                     ) : isPdfAttachment(resource.mimeType, resource.filename) ? (
                       <PdfThumbnail
-                        url={resolveVosResourceUrl(resource.url)}
+                        url={resource.url}
                         label={resource.filename || resource.id}
                         byteSize={resource.byteSize}
                         className="p-2"
@@ -429,14 +428,14 @@ export const AssetsPane = ({ onClose, repository, onOpenExecutionCenter }: Asset
                   >
                     {resource.kind === "image" ? (
                       <img
-                        src={resolveVosResourceUrl(resource.url)}
+                        src={resource.url}
                         alt={resource.filename || ""}
                         className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                         loading="lazy"
                       />
                     ) : isPdfAttachment(resource.mimeType, resource.filename) ? (
                       <PdfThumbnail
-                        url={resolveVosResourceUrl(resource.url)}
+                        url={resource.url}
                         label={resource.filename || resource.id}
                         byteSize={resource.byteSize}
                         className="p-1"
@@ -475,7 +474,7 @@ export const AssetsPane = ({ onClose, repository, onOpenExecutionCenter }: Asset
                   </ButtonTooltip>
                   <ButtonTooltip title={t("assets.openInNewWindow")}>
                     <a
-                      href={resolveVosResourceUrl(resource.url)}
+                      href={resource.url}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={t("assets.openInNewWindow")}

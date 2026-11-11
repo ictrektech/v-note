@@ -51,8 +51,12 @@ import {
 } from "@/components/MemoEditorChromeDensity";
 import { MemoTitleInput } from "@/components/MemoTitleInput";
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EditorToolbar } from "./EditorToolbar";
 import { EditorOutline } from "./EditorOutline";
@@ -175,8 +179,8 @@ import {
   getMemoSaveConflictInfoFromQueueItem,
 } from "@/lib/memo-save-conflict";
 import { copyResourceToClipboard, copyTextToClipboard } from "@/lib/clipboard";
-import { isVosBuild, resolveVosResourceUrl } from "@/lib/vos-mode";
 import { useNoteProseStylePreference } from "@/lib/note-prose-style-preference";
+import { updateMemoReadingStyle, useMemoReadingStyle } from "@/lib/memo-reading-style";
 import { createClientUuid } from "@/lib/client-id";
 import { isLocalMemoId, remapLocalDraftMemoId } from "@/lib/local-mirror";
 import { shouldAcceptRemoteMemoDetail } from "@/lib/memo-detail-freshness";
@@ -335,7 +339,7 @@ type EditorPaneProps = {
   memo: MemoDetail | null;
   repository: EdgeEverRepository;
   /** `instance|user` scope of this device's local data; keeps unapplied AI drafts (#652 PR B). */
-  localDataScope?: string;
+  localDataScope: string;
   desktopFocusMode: boolean;
   onToggleDesktopFocusMode: () => void;
   noteProse: ResolvedNoteProse;
@@ -670,6 +674,7 @@ const RichEditorPane = ({
     setEditorScrollContainer(element);
   }, []);
   const notebookOptions = useMemo(() => getNotebookMoveOptions(notebooks), [notebooks]);
+  const notebookName = notebookOptions.find((notebook) => notebook.id === memo?.notebookId)?.name;
   const readOnly = isTrashView || Boolean(memo?.isDeleted);
   const shareMemoId = memo && !readOnly && !isLocalMemoId(memo.id) ? memo.id : null;
   const shareStatusQuery = useQuery({
@@ -678,7 +683,7 @@ const RichEditorPane = ({
       if (!shareMemoId) throw new Error("Memo share query requires a memo id");
       return api.getMemoShare(shareMemoId);
     },
-    enabled: Boolean(shareMemoId) && !isVosBuild,
+    enabled: Boolean(shareMemoId),
     retry: false,
     staleTime: 30_000,
   });
@@ -735,6 +740,8 @@ const RichEditorPane = ({
 
   const memoRef = useRef<MemoDetail | null>(memo);
   const noteProseStyle = useNoteProseStylePreference();
+  const { showMagazineCover, showChapterNavigation } = useMemoReadingStyle(localDataScope, memo?.id);
+  const [readingStyleSaveError, setReadingStyleSaveError] = useState<string | null>(null);
   const editSessionRef = useRef<MemoEditSession | null>(null);
   const editorRef = useRef<Editor | null>(null);
   const headingShortcutSurfaceRef = useRef({ markdown: false, plainText: false });
@@ -3072,7 +3079,7 @@ const RichEditorPane = ({
     markdownSource,
     memo,
     noteProse,
-    notebookName: notebookOptions.find((notebook) => notebook.id === memo?.notebookId)?.name ?? "",
+    notebookName: notebookName ?? "",
     onDocumentActionConsumed,
     onSaveAsTemplate,
     tagsText,
@@ -3510,8 +3517,8 @@ const RichEditorPane = ({
     target.kind === "image" ? t("editor.imageActions.failed") : t("editor.attachmentActions.failed"), [t]);
 
   const fetchResourceResponse = useCallback(async (target: ResourceMenuTarget) => {
-    const response = isVosBuild || target.url.startsWith("edgeever-resource:") || target.url.startsWith("edgeever-staged:")
-      ? await fetch(resolveVosResourceUrl(target.url), { credentials: "same-origin" })
+    const response = target.url.startsWith("edgeever-resource:") || target.url.startsWith("edgeever-staged:")
+      ? await fetch(target.url)
       : await api.getResourceResponse(target.url);
     if (!response.ok) throw new Error(response.statusText || getResourceActionFailure(target));
     return response;
@@ -3519,7 +3526,7 @@ const RichEditorPane = ({
 
   const downloadResourceDirectly = useCallback((target: ResourceMenuTarget) => {
     const anchor = document.createElement("a");
-    anchor.href = resolveVosResourceUrl(toDesktopResourceDownloadUrl(target.url, target.filename));
+    anchor.href = toDesktopResourceDownloadUrl(target.url, target.filename);
     anchor.download = target.filename;
     anchor.click();
   }, []);
@@ -4371,11 +4378,91 @@ const RichEditorPane = ({
             </div>
             <MemoEditorToolbarDivider className="mx-0.5 hidden h-4 sm:block" />
             <div className="flex items-center gap-0.5">
+            {!readOnly && !useMarkdownSourceEditor && !useMobilePlainTextEditor && (
+              <DropdownMenu>
+                <IconTooltip label={t("editor.readingStyle")}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className={cn(
+                        "h-8 w-8 text-slate-500",
+                        (showMagazineCover || showChapterNavigation) && "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-300 hover:bg-slate-200",
+                      )}
+                      size="icon"
+                      variant="ghost"
+                      type="button"
+                      aria-label={t("editor.readingStyle")}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.85"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="9.5"
+                          rx="2"
+                          fill={showMagazineCover ? "currentColor" : "none"}
+                          fillOpacity={showMagazineCover ? "0.16" : undefined}
+                        />
+                        <path d="M7 7.75h6" />
+                        <rect
+                          x="3"
+                          y="15.5"
+                          width="7.5"
+                          height="5.5"
+                          rx="1.5"
+                          fill={showChapterNavigation ? "currentColor" : "none"}
+                          fillOpacity={showChapterNavigation ? "0.16" : undefined}
+                        />
+                        <rect
+                          x="13.5"
+                          y="15.5"
+                          width="7.5"
+                          height="5.5"
+                          rx="1.5"
+                          fill={showChapterNavigation ? "currentColor" : "none"}
+                          fillOpacity={showChapterNavigation ? "0.16" : undefined}
+                        />
+                      </svg>
+                    </Button>
+                  </DropdownMenuTrigger>
+                </IconTooltip>
+                <DropdownMenuContent align="end" className="min-w-36">
+                  <DropdownMenuCheckboxItem
+                    checked={showMagazineCover}
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={(checked) => {
+                      const saved = updateMemoReadingStyle(localDataScope, memo.id, { showMagazineCover: checked });
+                      setReadingStyleSaveError(saved ? null : memo.id);
+                    }}
+                  >
+                    {t("editor.magazineCover")}
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={showChapterNavigation}
+                    onSelect={(event) => event.preventDefault()}
+                    onCheckedChange={(checked) => {
+                      const saved = updateMemoReadingStyle(localDataScope, memo.id, { showChapterNavigation: checked });
+                      setReadingStyleSaveError(saved ? null : memo.id);
+                    }}
+                  >
+                    {t("editor.chapterNavigation")}
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <MemoEditorFocusModeButton
               desktopFocusMode={desktopFocusMode}
               onToggleDesktopFocusMode={onToggleDesktopFocusMode}
             />
-            {!isVosBuild && !readOnly && (!mobileEditingActive || isMemoShared) && (
+            {!readOnly && (!mobileEditingActive || isMemoShared) && (
               <IconTooltip label={t(isLocalMemoId(memo.id) ? "sharing.afterSync" : isMemoShared ? "sharing.manage" : "sharing.action")}>
                 <Button
                   className="h-8 w-8 text-slate-500"
@@ -4505,7 +4592,7 @@ const RichEditorPane = ({
                   <History className="h-4 w-4 text-slate-500" />
                   {t("editor.versionHistory")}
                 </DropdownMenuItem>
-                {!isVosBuild && !readOnly && (
+                {!readOnly && (
                   <DropdownMenuItem
                     className={cn(
                       "flex h-9 w-full items-center gap-2 px-3 text-left text-xs hover:bg-slate-50 cursor-pointer outline-none",
@@ -4653,6 +4740,11 @@ const RichEditorPane = ({
             onPickMathFormula={() => openMathFormula()}
           />
         )}
+        {readingStyleSaveError === memo.id && (
+          <p role="alert" className="px-4 py-2 text-xs text-rose-700 dark:text-rose-300">
+            {t("editor.readingStyleSaveFailed")}
+          </p>
+        )}
         <EditorSaveRecoveryBanner
           saveState={saveState}
           conflictReason={saveConflictReason}
@@ -4674,7 +4766,8 @@ const RichEditorPane = ({
         data-note-heading-style={noteProseStyle.headingStyle}
         data-note-quote-style={noteProseStyle.quoteStyle}
         data-note-emphasis-style={noteProseStyle.emphasisStyle}
-        data-note-magazine-cover={noteProseStyle.showMagazineCover ? "true" : "false"}
+        data-note-magazine-cover={showMagazineCover ? "true" : "false"}
+        data-note-chapter-navigation={showChapterNavigation ? "true" : "false"}
         data-note-title={title || getEditableMemoTitle(memo?.title)}
         style={{
           ...noteProseCssVariables(noteProse),
@@ -4836,11 +4929,14 @@ const RichEditorPane = ({
                     onAsk={() => requestSelectionAi("ask")}
                   />
                 </BubbleMenu>
-                {noteProseStyle.showMagazineCover ? (
+                {showMagazineCover || showChapterNavigation ? (
                   <EditorMagazineHeader
                     editor={editor}
+                    showMagazineCover={showMagazineCover}
+                    showChapterNavigation={showChapterNavigation}
                     title={title || getEditableMemoTitle(memo?.title)}
                     tags={memo?.tags}
+                    notebookName={notebookName}
                     updatedAt={memo?.updatedAt}
                     palette={noteProse.palette}
                   />
@@ -4857,6 +4953,8 @@ const RichEditorPane = ({
             <EditorPhonePreview
               editor={editor}
               title={getEditableMemoTitle(memo?.title)}
+              showMagazineCover={showMagazineCover}
+              showChapterNavigation={showChapterNavigation}
               scrollContainer={editorScrollContainer}
               noteProse={noteProse}
             />
@@ -5064,7 +5162,7 @@ const RichEditorPane = ({
           contentMarkdown={currentMarkdownForAi}
           memoId={memo.id}
           notebookId={memo.notebookId}
-          notebookTitle={notebookOptions.find((notebook) => notebook.id === memo.notebookId)?.name}
+          notebookTitle={notebookName}
           noteTitle={title}
           beforeCompanionApply={beforeCompanionApply}
           onCompanionNotesChanged={onCompanionNotesChanged}

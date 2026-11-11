@@ -28,7 +28,6 @@ import type { ShortcutSettings } from "@/lib/app-helpers";
 import type { NoteProsePatch, ResolvedNoteProse } from "@edgeever/shared";
 import { BETA_BADGE_CLASSNAME, WORKSPACE_PAGE_TITLE_CLASSNAME } from "@/lib/workspace-ui";
 import { cn } from "@/lib/utils";
-import { isVosBuild } from "@/lib/vos-mode";
 import { AccountInfoCard } from "./settings/AccountInfoCard";
 import { DesktopScheduledBackupCard } from "./settings/DesktopScheduledBackupCard";
 import { DataExportCard } from "./settings/DataExportCard";
@@ -170,12 +169,12 @@ export const SettingsPane = ({
       label: t("settings.tabs.data"),
       icon: DatabaseBackup,
     },
-    ...(!isVosBuild ? [{
-      key: "sharing" as const,
+    {
+      key: "sharing",
       label: t("sharing.managementTitle"),
       icon: Share2,
-    }] : []),
-    ...(isOwner && !isVosBuild
+    },
+    ...(isOwner
       ? [
           {
             key: "users" as const,
@@ -193,11 +192,11 @@ export const SettingsPane = ({
           },
         ]
       : []),
-    ...(!isVosBuild ? [{
-      key: "account" as const,
+    {
+      key: "account",
       label: t("settings.tabs.account"),
       icon: Shield,
-    }] : []),
+    },
     {
       key: "system",
       label: t("systemInfo.title"),

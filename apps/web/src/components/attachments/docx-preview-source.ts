@@ -1,8 +1,4 @@
 import { normalizeAttachmentByteSize } from "@edgeever/shared";
-import { isVosBuild } from "@/lib/vos-mode";
-
-const isLocalResourceUrl = (url: string) => url.startsWith("/api/v1/resources/")
-  || (isVosBuild && url.startsWith(`${(import.meta.env.BASE_URL || "/").replace(/\/$/, "")}/api/v1/resources/`));
 
 export const MAX_INLINE_DOCX_BYTES = 10 * 1024 * 1024;
 
@@ -10,7 +6,7 @@ export class DocxPreviewTooLargeError extends Error {}
 
 export const isPreviewableDocx = (filename: string, url: string) =>
   /\.docx$/i.test(filename.trim())
-  && (isLocalResourceUrl(url)
+  && (url.startsWith("/api/v1/resources/")
     || url.startsWith("edgeever-resource://")
     || url.startsWith("edgeever-staged://"));
 
@@ -45,7 +41,7 @@ export const loadDocxPreviewBytes = async (
     return new Uint8Array(resource.bytes);
   }
 
-  if (!isLocalResourceUrl(url)) throw new Error("Unsupported DOCX resource URL");
+  if (!url.startsWith("/api/v1/resources/")) throw new Error("Unsupported DOCX resource URL");
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", signal });
   if (!response.ok) throw new Error(`DOCX resource request failed: ${response.status}`);
   const declaredSize = normalizeAttachmentByteSize(response.headers.get("Content-Length"));

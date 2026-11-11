@@ -1,6 +1,6 @@
 {
   "name": "edgeever",
-  "version": "2.23.0",
+  "version": "2.25.0",
   "packageManager": "bun@1.3.14",
   "private": true,
   "type": "module",
@@ -136,7 +136,6 @@
     "@edgeever/plugin-api": "workspace:*",
     "@edgeever/shared": "workspace:*",
     "@hono/zod-validator": "0.8.0",
-    "@noble/hashes": "2.4.0",
     "@radix-ui/react-checkbox": "^1.3.11",
     "@radix-ui/react-collapsible": "^1.1.20",
     "@radix-ui/react-context-menu": "^2.3.7",

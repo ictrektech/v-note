@@ -49,7 +49,6 @@ const readReleaseSummary = (packageVersion: string) => {
 };
 
 const readGitCommit = () => {
-  if (process.env.VITE_VOS === "true") return process.env.EDGE_EVER_BUILD_ID?.slice(0, 12) ?? "vos";
   try {
     return execSync("git rev-parse --short=12 HEAD", { encoding: "utf8" }).trim();
   } catch {
@@ -58,7 +57,6 @@ const readGitCommit = () => {
 };
 
 const readGitDescription = () => {
-  if (process.env.VITE_VOS === "true") return null;
   try {
     return execSync('git describe --tags --long --match "v[0-9]*.[0-9]*.[0-9]*" HEAD', { encoding: "utf8" }).trim();
   } catch {
@@ -67,7 +65,6 @@ const readGitDescription = () => {
 };
 
 const readLatestReleaseCommitTimestamp = () => {
-  if (process.env.VITE_VOS === "true") return "";
   try {
     const releaseTag = execSync('git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" HEAD', { encoding: "utf8" }).trim();
     return execSync(`git log -1 --format=%cI ${releaseTag}`, { encoding: "utf8" }).trim();
@@ -86,7 +83,6 @@ const readLatestReleaseCommitTimestamp = () => {
 const buildId = process.env.WORKERS_CI_COMMIT_SHA?.slice(0, 12)
   ?? process.env.CF_PAGES_COMMIT_SHA?.slice(0, 12)
   ?? process.env.GITHUB_SHA?.slice(0, 12)
-  ?? process.env.EDGE_EVER_BUILD_ID?.slice(0, 12)
   ?? readGitCommit()
   ?? "local";
 const gitDescription = readGitDescription();
@@ -98,8 +94,6 @@ const TARGET_VENDOR_CHUNK_BYTES = 450 * 1024;
 const releaseTimestamp = resolveReleaseTimestamp(process.env.EDGE_EVER_RELEASED_AT) || readLatestReleaseCommitTimestamp();
 const deploymentMetadata = resolveDeploymentBuildMetadata(process.env);
 const isDesktopBuild = process.env.EDGE_EVER_DESKTOP_BUILD === "1";
-const isVosBuild = process.env.VITE_VOS === "true";
-const vosBasePath = (process.env.VITE_VOS_BASE_PATH || "/app/com.ictrek.v-note/").replace(/\/?$/, "/");
 const developmentServiceWorkerReset: Plugin = {
   name: "edgeever-development-service-worker-reset",
   apply: "serve",
@@ -139,7 +133,7 @@ export default defineConfig({
   },
   // Packaged Electron apps load index.html via file://, so root-absolute
   // asset URLs resolve to the filesystem root and leave a blank window.
-  base: isDesktopBuild ? "./" : isVosBuild ? vosBasePath : "/",
+  base: isDesktopBuild ? "./" : "/",
   define: {
     __EDGEEVER_APP_VERSION__: JSON.stringify(appVersion),
     __EDGEEVER_BUILD_ID__: JSON.stringify(buildId),
@@ -152,15 +146,7 @@ export default defineConfig({
     __EDGEEVER_DESKTOP_BUILD__: JSON.stringify(isDesktopBuild),
   },
   plugins: [
-    ...(isVosBuild ? [{
-      name: "vos-html-branding",
-      transformIndexHtml: (html: string) => html
-        .replace("<title>EdgeEver</title>", "<title>V-Note</title>")
-        .replace('favicon.svg" type="image/svg+xml"', 'v-note-icon-192.png" type="image/png"')
-        .replace("apple-touch-icon.png", "v-note-apple-touch-icon.png")
-        .replace("EdgeEver：基于 Cloudflare 与 Docker 自托管的现代化开源笔记与 AI 个人知识库。", "V-Note：VOS 笔记与 AI 知识库。"),
-    }] : []),
-    ...(isVosBuild ? [] : [automaticPosterThumbnails()]),
+    automaticPosterThumbnails(),
     tailwindcss(),
     localDevelopmentAuth(),
     publicShareMarkdownDev(),
@@ -171,11 +157,11 @@ export default defineConfig({
       includeAssets: [],
       includeManifestIcons: false,
       manifest: {
-        name: isVosBuild ? "V-Note" : "EdgeEver",
-        short_name: isVosBuild ? "V-Note" : "EdgeEver",
-        description: isVosBuild ? "V-Note：VOS 笔记与 AI 知识库。" : "EdgeEver：基于 Cloudflare 与 Docker 自托管的现代化开源笔记与 AI 个人知识库。",
-        start_url: isVosBuild ? vosBasePath : "/",
-        scope: isVosBuild ? vosBasePath : "/",
+        name: "EdgeEver",
+        short_name: "EdgeEver",
+        description: "EdgeEver：基于 Cloudflare 与 Docker 自托管的现代化开源笔记与 AI 个人知识库。",
+        start_url: "/",
+        scope: "/",
         display: "standalone",
         background_color: "#0f172a",
         theme_color: "#0f172a",
@@ -183,21 +169,21 @@ export default defineConfig({
         categories: ["productivity", "utilities"],
         icons: [
           {
-            src: isVosBuild ? `${vosBasePath}v-note-icon-192.png` : "/pwa-192x192.png",
+            src: "/pwa-192x192.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: isVosBuild ? `${vosBasePath}v-note-icon-512.png` : "/pwa-512x512.png",
+            src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
           },
-          ...(!isVosBuild ? [{
+          {
             src: "/maskable-icon-512x512.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
-          }] : []),
+          },
         ],
       },
       workbox: {

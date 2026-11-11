@@ -37,7 +37,6 @@ import {
   unauthorized,
 } from "./http-errors";
 import type { DatabaseAdapter } from "./storage-contract";
-import { isVosMode } from "./vos-mode";
 
 export type UserRow = {
   id: string;
@@ -146,7 +145,6 @@ export const registerAuthRoutes = (
       authRequired: true,
       authenticated: true,
       demoMode: dependencies.isDemoEnvironment(context.env),
-      vosMode: isVosMode(context.env),
       sessionToken: session.token,
       user: {
         id: user.id,
@@ -172,22 +170,6 @@ export const registerAuthRoutes = (
     const authMode = await dependencies.getInstanceAuthMode(context.env);
 
     if (authMode === "unconfigured") return authNotConfigured(context);
-    if (authMode === "vos") {
-      const auth = await dependencies.authenticateRequest(context, false, { allowMfaRestricted: true });
-      return context.json({
-        authRequired: true,
-        authenticated: Boolean(auth && auth.kind === "user"),
-        demoMode: dependencies.isDemoEnvironment(context.env),
-        vosMode: true,
-        user: auth?.kind === "user" ? {
-          id: auth.actorId,
-          username: auth.username,
-          displayName: auth.displayName,
-          role: auth.role,
-        } : null,
-        ...(auth?.kind === "user" && auth.mfaRestricted ? { mfaRebindRequired: true } : {}),
-      });
-    }
     if (authMode === "disabled") {
       return context.json({
         authRequired: false,
