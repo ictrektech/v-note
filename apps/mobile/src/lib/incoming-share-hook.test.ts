@@ -175,16 +175,13 @@ const workspaceShareEffectBody = () => {
   return new Bun.Transpiler({ loader: "ts" }).transformSync(source.slice(start + marker.length, end));
 };
 
-test.each([
-  ["ERR_WECHAT_ARCHIVE_STORAGE", "释放一些空间"],
-  ["ERR_WECHAT_ARCHIVE_COUNT", "请每次分享一份微信聊天记录压缩包。"],
-])("workspace reports WeChat share failure %s once", (code, hint) => {
+test("workspace reports a share that could not be copied for lack of storage", () => {
   const alerts: unknown[][] = [];
   let handled = 0;
   const context = {
     incomingShareIsResolving: false,
     shareImportKind: null,
-    incomingShareError: { code },
+    incomingShareError: { code: "ERR_WECHAT_ARCHIVE_STORAGE" },
     processedShareUrlRef: { current: null },
     getWeChatArchiveErrorCode: (error: { code: string }) => error.code,
     WECHAT_ARCHIVE_STORAGE_HINT: "释放一些空间",
@@ -194,7 +191,7 @@ test.each([
   const run = () => new Function(...Object.keys(context), workspaceShareEffectBody())(...Object.values(context));
   run();
   run();
-  expect(alerts).toEqual([["无法导入微信聊天记录", hint]]);
+  expect(alerts).toEqual([["无法导入微信聊天记录", "释放一些空间"]]);
   expect(handled).toBe(1);
 });
 

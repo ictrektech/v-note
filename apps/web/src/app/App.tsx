@@ -19,6 +19,7 @@ import { classifyLoginError, getLoginProblemMessageKey } from "@/lib/login-error
 import { EVERNOTE_MIGRATION_PATH } from "@/lib/routes";
 import { syncPublishedNoteBodyFont } from "@/lib/published-note-body-font";
 import { getNoteWindowMemoId } from "@/lib/desktop-note-windows";
+import { isVosBuild } from "@/lib/vos-mode";
 import { ApiRequestError, getMfaChallenge } from "@edgeever/client";
 import type { AuthSession, MfaChallenge } from "@edgeever/shared";
 import { twoFactorErrorKey } from "@/components/two-factor/TwoFactorSteps";
@@ -35,7 +36,7 @@ const PublicTableFormPage = lazy(() => import("@/components/PublicTableFormPage"
 const NoteWindowApp = lazy(() => import("@/components/NoteWindowApp").then((module) => ({ default: module.NoteWindowApp })));
 const NotebookSiteManagementPage = lazy(() => import("@/components/NotebookSiteManagementPage").then((module) => ({ default: module.NotebookSiteManagementPage })));
 
-const AuthLoadingScreen = ({ title = "EdgeEver", detail }: { title?: string; detail?: string }) => (
+const AuthLoadingScreen = ({ title = isVosBuild ? "V-Note" : "EdgeEver", detail }: { title?: string; detail?: string }) => (
   <div className="flex h-[100dvh] items-center justify-center bg-slate-50 px-6 text-center text-slate-700">
     <div role="status" aria-live="polite">
       <div className="text-sm font-semibold">{title}</div>
@@ -338,14 +339,20 @@ export const App = () => {
     <TooltipProvider delayDuration={0} skipDelayDuration={0}>
       <PwaInstallProvider>
         <Routes>
-          <Route path="/share/notebook/:token/:memoId?" element={<Suspense fallback={<AuthLoadingScreen />}><PublicNotebookSharePage /></Suspense>} />
-          <Route path="/s/:slug/:memoId?" element={<Suspense fallback={<AuthLoadingScreen />}><PublicNotebookSharePage /></Suspense>} />
-          <Route path="/share/:token" element={<Suspense fallback={<AuthLoadingScreen />}><PublicSharePage /></Suspense>} />
-          <Route path="/form/:token" element={<Suspense fallback={<AuthLoadingScreen />}><PublicTableFormPage /></Suspense>} />
+          {!isVosBuild ? (
+            <>
+              <Route path="/share/notebook/:token/:memoId?" element={<Suspense fallback={<AuthLoadingScreen />}><PublicNotebookSharePage /></Suspense>} />
+              <Route path="/s/:slug/:memoId?" element={<Suspense fallback={<AuthLoadingScreen />}><PublicNotebookSharePage /></Suspense>} />
+              <Route path="/share/:token" element={<Suspense fallback={<AuthLoadingScreen />}><PublicSharePage /></Suspense>} />
+              <Route path="/form/:token" element={<Suspense fallback={<AuthLoadingScreen />}><PublicTableFormPage /></Suspense>} />
+            </>
+          ) : null}
           <Route path={EVERNOTE_MIGRATION_PATH} element={<EvernoteMigrationRoute />} />
           <Route path="/" element={<AuthenticatedWorkspace />} />
           <Route path="/settings" element={<AuthenticatedWorkspace />} />
-          <Route path="/notebooks/:notebookId/site" element={<AuthenticatedWorkspace siteManagement />} />
+          {!isVosBuild ? (
+            <Route path="/notebooks/:notebookId/site" element={<AuthenticatedWorkspace siteManagement />} />
+          ) : null}
           <Route path="/plugins" element={<AuthenticatedWorkspace />} />
           <Route path="/plugins/:pluginId" element={<AuthenticatedWorkspace />} />
           <Route path="/templates" element={<AuthenticatedWorkspace />} />

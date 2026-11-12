@@ -24,6 +24,7 @@ export const DEFAULT_NOTE_PROSE_STYLE_PREFERENCES: NoteProseStylePreferences = {
   headingStyle: DEFAULT_NOTE_PROSE_HEADING_STYLE,
   quoteStyle: DEFAULT_NOTE_PROSE_QUOTE_STYLE,
   emphasisStyle: DEFAULT_NOTE_PROSE_EMPHASIS_STYLE,
+  showMagazineCover: false,
 };
 
 export const resolveStoredNoteProseStylePreference = (
@@ -38,6 +39,7 @@ export const resolveStoredNoteProseStylePreference = (
       headingStyle?: unknown;
       quoteStyle?: unknown;
       emphasisStyle?: unknown;
+      showMagazineCover?: unknown;
     } | null;
     if (typeof parsed !== "object" || parsed === null) {
       return DEFAULT_NOTE_PROSE_STYLE_PREFERENCES;
@@ -49,6 +51,7 @@ export const resolveStoredNoteProseStylePreference = (
       headingStyle: parseNoteProseHeadingStyle(parsed.headingStyle) ?? DEFAULT_NOTE_PROSE_HEADING_STYLE,
       quoteStyle: parseNoteProseQuoteStyle(parsed.quoteStyle) ?? DEFAULT_NOTE_PROSE_QUOTE_STYLE,
       emphasisStyle: parseNoteProseEmphasisStyle(parsed.emphasisStyle) ?? DEFAULT_NOTE_PROSE_EMPHASIS_STYLE,
+      showMagazineCover: typeof parsed.showMagazineCover === "boolean" ? parsed.showMagazineCover : false,
     };
   } catch {
     return DEFAULT_NOTE_PROSE_STYLE_PREFERENCES;
@@ -78,6 +81,7 @@ export const writeNoteProseStylePreference = (
     headingStyle: parseNoteProseHeadingStyle(patch.headingStyle) ?? current.headingStyle,
     quoteStyle: parseNoteProseQuoteStyle(patch.quoteStyle) ?? current.quoteStyle,
     emphasisStyle: parseNoteProseEmphasisStyle(patch.emphasisStyle) ?? current.emphasisStyle,
+    showMagazineCover: typeof patch.showMagazineCover === "boolean" ? patch.showMagazineCover : current.showMagazineCover,
   };
   if (typeof window === "undefined") {
     unsavedNoteProseStylePreference = next;
@@ -110,6 +114,7 @@ export const useNoteProseStylePreference = (): NoteProseStylePreferences => {
           headingStyle: parseNoteProseHeadingStyle(detail.headingStyle) ?? DEFAULT_NOTE_PROSE_HEADING_STYLE,
           quoteStyle: parseNoteProseQuoteStyle(detail.quoteStyle) ?? DEFAULT_NOTE_PROSE_QUOTE_STYLE,
           emphasisStyle: parseNoteProseEmphasisStyle(detail.emphasisStyle) ?? DEFAULT_NOTE_PROSE_EMPHASIS_STYLE,
+          showMagazineCover: typeof detail.showMagazineCover === "boolean" ? detail.showMagazineCover : false,
         });
         return;
       }

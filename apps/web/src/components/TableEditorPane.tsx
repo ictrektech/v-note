@@ -61,6 +61,7 @@ import { createLocalEditSession } from "@/components/editor/editor-pane-helpers"
 import { isLocalMemoId } from "@/lib/local-mirror";
 import { isBrowserOffline } from "@/lib/network-status";
 import type { EdgeEverRepository } from "@/lib/repository";
+import { isVosBuild, resolveVosResourceUrl } from "@/lib/vos-mode";
 import type { MemoEditSession } from "@edgeever/shared";
 
 type TableEditorPaneProps = {
@@ -260,7 +261,7 @@ const AttachmentCell = ({
   return (
     <div className="flex min-w-36 flex-col gap-1 px-2">
       {items.map((item) => {
-        const href = toDesktopResourceUrl(tableAttachmentUrl(item.resourceId));
+        const href = resolveVosResourceUrl(toDesktopResourceUrl(tableAttachmentUrl(item.resourceId)));
         const image = isImageAttachment(item);
         const openLabel = t("structuredTable.openAttachment", { name: item.filename });
         const copied = copiedId === item.resourceId;
@@ -513,7 +514,7 @@ export const TableEditorPane = ({
   const formQuery = useQuery({
     queryKey: ["table-form", memo.id],
     queryFn: () => api.getTableForm(memo.id),
-    enabled: !isLocalMemoId(memo.id),
+    enabled: !isVosBuild && !isLocalMemoId(memo.id),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -887,22 +888,24 @@ export const TableEditorPane = ({
           </TooltipTrigger>
           <TooltipContent>{t(dirty || editing ? "structuredTable.unsaved" : "structuredTable.refreshTooltip")}</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={readOnly}
-              className={formAccepting ? "border-slate-900 bg-slate-100 text-slate-950 hover:bg-slate-200" : undefined}
-              onClick={() => setFormOpen(true)}
-            >
-              <Form className="h-4 w-4" />
-              {t(formAccepting ? "structuredTable.formLive" : "structuredTable.openForm")}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t(formAccepting ? "structuredTable.formLiveTooltip" : "structuredTable.openFormTooltip")}</TooltipContent>
-        </Tooltip>
+        {!isVosBuild ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={readOnly}
+                className={formAccepting ? "border-slate-900 bg-slate-100 text-slate-950 hover:bg-slate-200" : undefined}
+                onClick={() => setFormOpen(true)}
+              >
+                <Form className="h-4 w-4" />
+                {t(formAccepting ? "structuredTable.formLive" : "structuredTable.openForm")}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t(formAccepting ? "structuredTable.formLiveTooltip" : "structuredTable.openFormTooltip")}</TooltipContent>
+          </Tooltip>
+        ) : null}
         <Button type="button" variant="outline" size="sm" onClick={exportCsv}>
           <Download className="h-4 w-4" />
           {t("structuredTable.exportCsv")}
@@ -1044,13 +1047,15 @@ export const TableEditorPane = ({
           </select>
         </label>
       </div>
-      <TableFormDialog
-        memoId={memo.id}
-        memoTitle={title}
-        fields={document.fields}
-        open={formOpen}
-        onOpenChange={setFormOpen}
-      />
+      {!isVosBuild ? (
+        <TableFormDialog
+          memoId={memo.id}
+          memoTitle={title}
+          fields={document.fields}
+          open={formOpen}
+          onOpenChange={setFormOpen}
+        />
+      ) : null}
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-max min-w-full border-collapse">
           <thead className="sticky top-0 z-10 bg-card">

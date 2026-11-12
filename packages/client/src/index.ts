@@ -113,11 +113,6 @@ export type EdgeEverClientOptions = {
   allowAiServerFallback?: boolean;
   /** Used only for the model provider request; defaults to `fetch`. */
   providerFetch?: typeof fetch;
-  /**
-   * Reads the public models.dev catalogue when a model service reports no limits (#652);
-   * defaults to the global `fetch`, and `null` turns the fallback off.
-   */
-  modelCatalogFetch?: typeof fetch | null;
   beforeRequest?: (context: EdgeEverClientRequestContext) => void | Promise<void>;
   shouldAttachToken?: (path: string) => boolean;
   onUnauthorized?: (context: EdgeEverClientRequestContext) => void | Promise<void>;
@@ -398,8 +393,6 @@ export type { SyncBootstrapResponse, SyncChangesResponse };
 
 export const createEdgeEverClient = (options: EdgeEverClientOptions = {}) => {
   const getFetch = () => options.fetch ?? globalThis.fetch;
-  // models.dev allows any origin, so it is read directly, never through the model relay (#652).
-  const modelCatalogFetch = () => options.modelCatalogFetch === null ? undefined : options.modelCatalogFetch ?? globalThis.fetch;
   const providerFetch = (): typeof fetch => async (url, init) => {
     const directFetch = options.providerFetch ?? getFetch();
     if (!options.allowAiServerFallback) return directFetch(url, { ...init, credentials: "omit", redirect: "error" });
@@ -1238,7 +1231,7 @@ export const createEdgeEverClient = (options: EdgeEverClientOptions = {}) => {
         // The instance has no fresh limits for this model: read them from the provider once,
         // save them for every client, and prepare again so this request already uses them.
         const { detectAiModelCapabilities } = await import("./ai-model-capabilities-direct");
-        const limits = await detectAiModelCapabilities(prepared, providerFetch(), streamOptions.signal, { catalogFetch: modelCatalogFetch() });
+        const limits = await detectAiModelCapabilities(prepared, providerFetch(), streamOptions.signal);
         const hasLimits = Boolean(limits && (limits.maxOutputTokens || limits.maxInputTokens || limits.contextWindowTokens));
         if (limits && await report(limits) && hasLimits) prepared = await prepare();
       }
@@ -1268,7 +1261,7 @@ export const createEdgeEverClient = (options: EdgeEverClientOptions = {}) => {
         { method: "POST", body: JSON.stringify({ modelId }), signal },
       );
       const { detectAiModelCapabilities } = await import("./ai-model-capabilities-direct");
-      const limits = await detectAiModelCapabilities({ ...credential, modelId }, providerFetch(), signal, { catalogFetch: modelCatalogFetch() });
+      const limits = await detectAiModelCapabilities({ ...credential, modelId }, providerFetch(), signal);
       if (!limits) return null;
       return request<{ detectedCapabilities: AiModelCapabilities | null }>(
         `/api/v1/ai/providers/${encodeURIComponent(providerConfigId)}/models/${encodeURIComponent(modelConfigId)}/capabilities`,

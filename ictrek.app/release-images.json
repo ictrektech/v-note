@@ -1,0 +1,8 @@
+{
+  "version": "0.0.7",
+  "source_commit": "6efa326b2092b96cc6e84c00f5ac4bf46c80f41d",
+  "images": {
+    "VNOTE_AMD_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:amd_0.0.7@sha256:c38c4d4596a8127bc5d0cec11944e2aa447f7d2eb7374a2a7ab7445977ec855b",
+    "VNOTE_ARM_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:arm_0.0.7@sha256:fe6fb2714518c40aec60c2ec8aee9b626a5178e935d20dedc4f65668cd452eb9"
+  }
+}

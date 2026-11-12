@@ -333,6 +333,8 @@ export type AuthSession = {
   authRequired: boolean;
   authenticated: boolean;
   demoMode: boolean;
+  /** The instance is using VOS SSO instead of the password login page. */
+  vosMode?: boolean;
   user: AuthUser | null;
   sessionToken?: string;
   /** Signed in with a recovery code: only TOTP rebinding is allowed until done. */

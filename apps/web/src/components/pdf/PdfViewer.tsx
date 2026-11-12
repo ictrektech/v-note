@@ -23,6 +23,7 @@ import { COMPACT_ATTACHMENT_WIDTH_CLASS } from "@/components/attachments/attachm
 import { ButtonTooltip } from "@/components/ui/button-tooltip";
 import { useAttachmentByteSize } from "@/hooks/useAttachmentByteSize";
 import { isDesktopResourceRuntime, toApiResourceUrl, toDesktopResourceDownloadUrl } from "@/lib/desktop-resources";
+import { resolveVosResourceUrl } from "@/lib/vos-mode";
 import { cn } from "@/lib/utils";
 import { loadPdfJs } from "./pdfjs-loader";
 import { canPreviewPdfInline, loadPdfDocumentSource } from "./pdf-document-source";
@@ -186,7 +187,7 @@ export const PdfViewer = ({
   onNext,
 }: PdfViewerProps) => {
   const { t } = useTranslation();
-  const resolvedUrl = isDesktopResourceRuntime() ? url : toApiResourceUrl(url);
+  const resolvedUrl = isDesktopResourceRuntime() ? url : resolveVosResourceUrl(toApiResourceUrl(url));
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(defaultExpanded);
   const [nearViewport, setNearViewport] = useState(fullscreen);

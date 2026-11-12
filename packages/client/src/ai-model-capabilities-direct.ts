@@ -26,28 +26,9 @@ class DetectionUnavailable extends Error {}
  * - Returns `null` when the metadata could not be read (network, authentication, rate-limit or
  *   server errors); nothing should be reported then. A gateway answering an unsupported metadata
  *   path with 400 or 404 counts as "no limits".
- * - When the provider answered without limits and `catalogFetch` is given, the public models.dev
- *   catalogue fills in (`source: "models-dev"`). It is never mixed with the provider's own limits,
- *   and an unreadable or unmatched catalogue still reports "no limits".
  * These are read-only GET requests; they never generate text.
  */
 export const detectAiModelCapabilities = async (
-  target: DetectionTarget,
-  fetchImpl: typeof fetch,
-  signal?: AbortSignal,
-  options: { catalogFetch?: typeof fetch } = {},
-): Promise<AiModelCapabilityLimits | null> => {
-  const fromService = await detectFromService(target, fetchImpl, signal);
-  if (fromService?.source !== "none" || !options.catalogFetch) return fromService;
-  const [{ loadModelsDevIndex }, { matchModelsDevLimits }] = await Promise.all([
-    import("./models-dev-catalog"),
-    import("@edgeever/shared/ai-models-dev"),
-  ]);
-  const index = await loadModelsDevIndex(options.catalogFetch, signal);
-  return (index && matchModelsDevLimits(index, target)) ?? fromService;
-};
-
-const detectFromService = async (
   target: DetectionTarget,
   fetchImpl: typeof fetch,
   signal?: AbortSignal,
@@ -75,10 +56,8 @@ const detectFromService = async (
     }
     // OpenRouter and DeepSeek put limits on the model list; LiteLLM serves them on /model/info.
     // The list itself must answer: it is the same endpoint "Discover models" uses.
-    // Only an unsupported /model/info path means "no limits"; authentication, rate-limit, server
-    // and network errors there stay "unknown" (thrown), so a limit saved earlier is not replaced.
     return await read(`${base}/models`, "models", false)
-      ?? await read(`${base}/model/info`, "litellm-model-info", true)
+      ?? await read(`${base}/model/info`, "litellm-model-info", true).catch(() => null)
       ?? AI_MODEL_CAPABILITY_NONE;
   } catch (error) {
     if (signal?.aborted) throw error;

@@ -5,12 +5,15 @@ import {
   defaultLocale,
   getBrowserLocale,
   getInitialLocale,
+  readStoredLocale,
   supportedLocales,
   writeStoredLocale,
   type AppLocalePreference,
   type SupportedLocale,
 } from "./locales";
 import { zhCN } from "./resources/zh-CN";
+import { isVosBuild } from "@/lib/vos-mode";
+import { listenForVosLocale, readVosLocale } from "./vos-locale";
 
 export {
   defaultLocale,
@@ -96,28 +99,35 @@ i18n.on("languageChanged", (locale) => {
 
 document.documentElement.lang = i18n.resolvedLanguage ?? i18n.language ?? defaultLocale;
 
-export const bootstrapI18n = async () => {
-  const locale = getInitialLocale();
-  if (!isOptionalLocale(locale)) {
-    return;
-  }
-
+let vosLocale: SupportedLocale | null = null;
+let languageRevision = 0;
+const applyLocale = async (locale: SupportedLocale) => {
+  const revision = ++languageRevision;
   await ensureLocaleCatalog(locale);
-  await i18n.changeLanguage(locale);
+  if (revision === languageRevision) await i18n.changeLanguage(locale);
+};
+
+const systemLocale = () => (isVosBuild ? vosLocale ?? readVosLocale() : null) ?? getBrowserLocale() ?? defaultLocale;
+
+export const bootstrapI18n = async () => {
+  await applyLocale(isVosBuild ? readStoredLocale() ?? systemLocale() : getInitialLocale());
+  if (isVosBuild) {
+    listenForVosLocale((locale) => {
+      vosLocale = locale;
+      if (!readStoredLocale()) void applyLocale(systemLocale()).catch(() => undefined);
+    });
+  }
 };
 
 export const changeAppLocale = async (locale: SupportedLocale) => {
   writeStoredLocale(locale);
-  await ensureLocaleCatalog(locale);
-  return i18n.changeLanguage(locale);
+  return applyLocale(locale);
 };
 
 export const changeAppLocalePreference = async (preference: AppLocalePreference) => {
   if (preference === "system") {
     clearStoredLocale();
-    const locale = getBrowserLocale() ?? defaultLocale;
-    await ensureLocaleCatalog(locale);
-    return i18n.changeLanguage(locale);
+    return applyLocale(systemLocale());
   }
 
   return changeAppLocale(preference);

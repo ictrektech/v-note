@@ -66,8 +66,6 @@ const formatYearMonth = (iso?: string) => {
 
 export const EditorMagazineHeader = ({
   editor,
-  showMagazineCover,
-  showChapterNavigation,
   title,
   tags = [],
   notebookName,
@@ -75,8 +73,6 @@ export const EditorMagazineHeader = ({
   palette = "native",
 }: {
   editor: Editor | null;
-  showMagazineCover: boolean;
-  showChapterNavigation: boolean;
   title?: string;
   tags?: string[];
   notebookName?: string;
@@ -140,9 +136,6 @@ export const EditorMagazineHeader = ({
     target?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const showNavigation = showChapterNavigation && sections.length >= 2;
-  if (!showMagazineCover && !showNavigation) return null;
-
   return (
     <div
       data-edgeever-magazine-header="true"
@@ -151,8 +144,8 @@ export const EditorMagazineHeader = ({
         fontFamily: "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
       }}
     >
-      {showMagazineCover && <div
-        data-edgeever-magazine-cover="true"
+      {/* Component 2: Magazine cover-breaking card */}
+      <div
         style={{
           margin: "0 0 28px",
           background: "#ffffff",
@@ -255,8 +248,6 @@ export const EditorMagazineHeader = ({
         >
           <span
             style={{
-              minWidth: 0,
-              overflowWrap: "anywhere",
               fontSize: "12px",
               color: isNative ? "#374151" : "rgba(255, 255, 255, 0.92)",
               fontWeight: 600,
@@ -299,10 +290,11 @@ export const EditorMagazineHeader = ({
             ))}
           </div>
         </div>
-      </div>}
+      </div>
 
-      {showNavigation ? (
-        <div data-edgeever-chapter-navigation="true" style={{ margin: "0 0 28px" }}>
+      {/* Component 3: Horizontal PARTS directory cards (toc-scroll) */}
+      {sections.length >= 2 ? (
+        <div style={{ margin: "0 0 28px" }}>
           <div
             style={{
               display: "flex",

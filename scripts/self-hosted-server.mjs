@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { mkdir, readdir, readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, extname, join, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasBootstrapCredential } from "../apps/api/src/auth-bootstrap.ts";
 import { isUnauthenticatedAccessEnabled } from "../apps/api/src/auth-state.ts";
@@ -8,20 +8,22 @@ import { isEdgeEverAppPath } from "../apps/api/src/app-paths.ts";
 import { fetchEdgeEverApp } from "../apps/api/src/index.ts";
 import { isNotebookSitePagePath, renderNotebookSitePage } from "../apps/api/src/notebook-site-page.ts";
 import { isPublicMemoSharePagePath, renderPublicMemoSharePage } from "../apps/api/src/share-page.ts";
+import { isPublicPagePath, PUBLIC_PAGE_HEADERS } from "../packages/shared/src/public-page-headers.ts";
 import { nodePublicFetch } from "../apps/api/src/node-public-network.ts";
 import { createSelfHostedStorageAdapter } from "../apps/api/src/self-hosted-storage-adapter.ts";
+import { isVosDisabledPagePath, isVosMode } from "../apps/api/src/vos-mode.ts";
 import { resolveSelfHostedConfig } from "./self-hosted-config.mjs";
 import { ensureSelfHostedCredentialSecrets, loadSelfHostedEnvironment } from "./self-hosted-secrets.mjs";
-import { serveSelfHostedStatic } from "./self-hosted-static.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeEnvironment = await loadSelfHostedEnvironment(process.env);
 const config = resolveSelfHostedConfig(runtimeEnvironment, projectRoot);
 const { dataDirectory, databaseFile, resourcesDirectory, webDirectory } = config;
+const vosMode = isVosMode(runtimeEnvironment);
 
 await mkdir(dataDirectory, { recursive: true });
 await mkdir(resourcesDirectory, { recursive: true });
-await ensureSelfHostedCredentialSecrets(dataDirectory, runtimeEnvironment);
+await ensureSelfHostedCredentialSecrets(dataDirectory, runtimeEnvironment, { generateIfMissing: vosMode });
 const sqlite = new Database(databaseFile, { create: true });
 sqlite.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA busy_timeout = 5000;");
 
@@ -58,6 +60,7 @@ if (
   !existingUser
   && !hasBootstrapCredential(runtimeEnvironment.EDGE_EVER_AUTH_PASSWORD, runtimeEnvironment.EDGE_EVER_AUTH_PASSWORD_HASH)
   && !isUnauthenticatedAccessEnabled(runtimeEnvironment.EDGE_EVER_ALLOW_UNAUTHENTICATED)
+  && !vosMode
 ) {
   sqlite.close();
   throw new Error(
@@ -108,12 +111,56 @@ const env = {
   EDGE_EVER_CREDENTIALS_ENCRYPTION_KEY_PREVIOUS: runtimeEnvironment.EDGE_EVER_CREDENTIALS_ENCRYPTION_KEY_PREVIOUS,
   EDGE_EVER_DEMO_MODE: runtimeEnvironment.EDGE_EVER_DEMO_MODE,
   EDGE_EVER_ALLOW_UNAUTHENTICATED: runtimeEnvironment.EDGE_EVER_ALLOW_UNAUTHENTICATED,
+  EDGE_EVER_VOS_MODE: runtimeEnvironment.EDGE_EVER_VOS_MODE,
+  EDGE_EVER_VOS_USERINFO_URL: runtimeEnvironment.EDGE_EVER_VOS_USERINFO_URL,
+  EDGE_EVER_PUBLIC_BASE_PATH: runtimeEnvironment.EDGE_EVER_PUBLIC_BASE_PATH,
   EDGE_EVER_COMMUNITY_REGISTRY_URL: runtimeEnvironment.EDGE_EVER_COMMUNITY_REGISTRY_URL,
 };
 
 const executionContext = {
   waitUntil: (promise) => Promise.resolve(promise).catch((error) => console.error("[self-hosted] background task failed", error)),
   passThroughOnException: () => undefined,
+};
+
+const contentTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+  ".woff2": "font/woff2",
+};
+
+const serveStatic = async (request) => {
+  const url = new URL(request.url);
+  const requestedPath = normalize(url.pathname === "/" ? "/index.html" : url.pathname);
+  const candidate = resolve(webDirectory, `.${requestedPath}`);
+  const relativeCandidate = relative(webDirectory, candidate);
+
+  if (relativeCandidate.startsWith("..") || relativeCandidate.includes(".." + "/")) {
+    return new Response("Not Found", { status: 404 });
+  }
+
+  const file = Bun.file(candidate);
+  if (await file.exists()) {
+    return new Response(file, {
+      headers: { "Content-Type": contentTypes[extname(candidate)] ?? "application/octet-stream" },
+    });
+  }
+
+  const index = Bun.file(join(webDirectory, "index.html"));
+  return (await index.exists())
+    ? new Response(index, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          // Share and form links render the app shell; keep them out of search indexes and caches.
+          ...(isPublicPagePath(url.pathname) ? PUBLIC_PAGE_HEADERS : {}),
+        },
+      })
+    : new Response("Web build not found. Run bun run build:web first.", { status: 503 });
 };
 
 const server = Bun.serve({
@@ -124,7 +171,10 @@ const server = Bun.serve({
   idleTimeout: config.idleTimeout,
   async fetch(request) {
     const pathname = new URL(request.url).pathname;
-    const loadAppShell = () => serveSelfHostedStatic(new Request(new URL("/index.html", request.url)), webDirectory);
+    if (vosMode && isVosDisabledPagePath(pathname)) {
+      return new Response("Not Found", { status: 404 });
+    }
+    const loadAppShell = () => serveStatic(new Request(new URL("/index.html", request.url)));
     if (isNotebookSitePagePath(pathname)) {
       return renderNotebookSitePage(request, storage.db, loadAppShell);
     }
@@ -135,7 +185,7 @@ const server = Bun.serve({
     if (isEdgeEverAppPath(pathname)) {
       return fetchEdgeEverApp(request, env, executionContext);
     }
-    return serveSelfHostedStatic(request, webDirectory);
+    return serveStatic(request);
   },
 });
 

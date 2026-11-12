@@ -1,0 +1,17 @@
+configs:
+  - name: VNOTE_BREAK_GLASS_PASSWORD
+    type: string
+    title: {zh-CN: 本地应急管理员密码, en: Local break-glass admin password}
+    description:
+      zh-CN: 可选。设置后可通过 /app/com.ictrek.v-note/?local=1 使用 admin 本地登录；正常用户仍只走 VOS SSO。
+      en: Optional. When set, admin can use the hidden local login at /app/com.ictrek.v-note/?local=1; normal users still use VOS SSO.
+    default: ""
+  - name: VNOTE_SESSION_TTL_DAYS
+    type: integer
+    title: {zh-CN: 登录会话有效期（天）, en: Session Lifetime (days)}
+    description:
+      zh-CN: V-Note 会话 Cookie 的有效期；VOS 每次打开应用会重新校验当前用户。
+      en: V-Note session cookie lifetime. VOS revalidates the current user whenever the app opens.
+    default: 7
+    minimum: 1
+    maximum: 30
