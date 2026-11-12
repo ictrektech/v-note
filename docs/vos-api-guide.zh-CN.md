@@ -12,11 +12,11 @@ VOS 安装包已注册网关路由，同时把宿主机 TCP `22710` 映射到容
 ### 手机原生应用登录
 
 1. 安装 **EdgeEver**：[iPhone App Store](https://apps.apple.com/us/app/edgeever/id6792625631) · [Android Google Play](https://play.google.com/store/apps/details?id=org.edgeever.mobile)。
-2. 在 EdgeEver 的「实例地址」填 `https://<VOS 网关>:1180/app/com.ictrek.v-note`，协议、主机和端口以实际网关为准。地址末尾不加 `/api`、`/mcp` 或 `?local=1`。手机须能访问网关，并信任它的 HTTPS 证书。无需新增端口映射。
+2. 在 EdgeEver 的「实例地址」填 `https://<VOS 网关>:1180/app/com.ictrek.v-note`，协议、主机和端口以实际网关为准。地址末尾不加 `/api`、`/mcp` 或 `?local=1`。请使用手机可访问的网关地址，地址须与手机操作系统信任的 HTTPS 证书匹配。无需新增端口映射。
 3. 在同一页填写自己的 **VOS 用户名和密码**，点「登录」。无需先打开网页、生成配对码或创建其他账号。不要填 Token。若 V-Note 账号已启用两步验证，按 App 提示验证。
-4. 打开「全部笔记」，等待首次同步，即可查看和编辑这个 VOS 账号原有的笔记。关闭后再打开 App 不必重登。主动退出、会话过期（默认 7 天）或换设备时，再用同一 VOS 账号登录。
+4. 打开「全部笔记」，等待首次同步，即可查看和编辑这个 VOS 账号原有的笔记。关闭后再打开 App 不必重登。主动退出、会话过期（默认 180 天）或换设备时，再用同一 VOS 账号登录。
 
-如果证书不受手机信任，请联系管理员为 VOS 网关配置受信任的证书并使用匹配的域名；不要改用 `http://<VOS 主机>:22710` 提交 VOS 密码。登录失败时可先确认同一账号能在 VOS 网页登录。安装时若配置了本地应急 `admin`，原有本地访问仍可使用，其工作区独立于 VOS 用户。
+请向管理员获取手机可直接使用的 HTTPS 网关地址。如果单位使用私有 CA，需由管理员下发证书，或在手机系统设置里安装并启用信任；不要改用 `http://<VOS 主机>:22710` 提交 VOS 密码。登录失败时可先确认同一账号能在 VOS 网页登录。安装时若配置了本地应急 `admin`，原有本地访问仍可使用，其工作区独立于 VOS 用户。
 
 VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 安装包声明了桌面 VOS 路由，未通过 `app-routers` 声明 VOS 手机 App 的 WebView 入口。
 
@@ -34,7 +34,7 @@ VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 
 | `POST /api/v1/auth/login` | JSON `username`（去空白后 1–80 字符）、`password`（1–512）、可选 `deviceId`（去空白后 16–160）、可选 `locale`（去空白后 1–35，首次登录语言）。可选字段没有值时省略。VOS 的 HTTPS 网关可接收 VOS 用户名和密码，由平台校验；现有本地账号也可用原密码。无需管理员角色。直连 HTTP 不验证 VOS 密码。 | `200` 会话摘要、`sessionToken`（V-Note 会话 Bearer 值）及会话 Cookie。创建或更新设备会话。 |
 | `POST /api/v1/auth/login/mfa` | JSON `challengeToken`（去空白后 16–128）、`code`（6–12）和 `recoveryCode`（10–32）二选一、可选 `deviceId` 和 `locale`（同登录接口）。 | 成功返回同样的会话结构。恢复码登录可能返回 `mfaRebindRequired:true` 和受限会话，此时须重新绑定 MFA。 |
 
-会话摘要包含布尔值 `authRequired`、`authenticated`、`demoMode`、`vosMode`。字段 `user` 为 null，或包含字符串 `id`、`username`、可空字符串 `displayName` 和 `role`（`owner` 或 `member`）的对象。`mfaRebindRequired` 仅在为 true 时出现。会话有效期由 `VNOTE_SESSION_TTL_DAYS` 配置，默认 7 天。每次从 VOS 打开应用都会重新校验 VOS 用户。
+会话摘要包含布尔值 `authRequired`、`authenticated`、`demoMode`、`vosMode`。字段 `user` 为 null，或包含字符串 `id`、`username`、可空字符串 `displayName` 和 `role`（`owner` 或 `member`）的对象。`mfaRebindRequired` 仅在为 true 时出现。会话有效期由 `VNOTE_SESSION_TTL_DAYS` 配置，默认 180 天。每次从 VOS 打开应用都会重新校验 VOS 用户。
 
 ```sh
 BASE='https://<VOS 主机>:1180/app/com.ictrek.v-note'

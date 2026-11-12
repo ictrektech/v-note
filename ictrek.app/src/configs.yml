@@ -10,8 +10,8 @@ configs:
     type: integer
     title: {zh-CN: 登录会话有效期（天）, en: Session Lifetime (days)}
     description:
-      zh-CN: V-Note 会话 Cookie 的有效期；VOS 每次打开应用会重新校验当前用户。
-      en: V-Note session cookie lifetime. VOS revalidates the current user whenever the app opens.
-    default: 7
+      zh-CN: 新签发的 V-Note 登录会话有效期，包括 EdgeEver 手机 App。
+      en: Lifetime of new V-Note sign-in sessions, including EdgeEver on mobile.
+    default: 180
     minimum: 1
-    maximum: 30
+    maximum: 180

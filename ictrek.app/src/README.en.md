@@ -26,7 +26,7 @@ on the deployment and must be verified.
 
 ## MCP and mobile clients
 
-Open **API Guide** beside **V-Note** in the VOS App Drawer, or from **Profile → API / MCP → API Guide**. Use `https://<vos-host>:1180/app/com.ictrek.v-note/mcp` with a V-Note Bearer API token. The package already maps direct LAN HTTP `22710` to container `8787`. In EdgeEver, enter the V-Note HTTPS gateway URL and your own VOS username and password to open your existing workspace. No pairing or extra port mapping is needed. See the in-app guide for downloads, certificate setup and API contracts.
+Open **API Guide** beside **V-Note** in the VOS App Drawer, or from **Profile → API / MCP → API Guide**. Use `https://<vos-host>:1180/app/com.ictrek.v-note/mcp` with a V-Note Bearer API token. The package already maps direct LAN HTTP `22710` to container `8787`. In EdgeEver, enter the V-Note HTTPS gateway URL and your own VOS username and password to open your existing workspace. New V-Note sessions last 180 days by default. See the in-app guide for downloads, certificate setup and API contracts.
 
 ## Source
 

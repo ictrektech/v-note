@@ -12,11 +12,11 @@ The gateway route is registered by the VOS package. Compose already maps host TC
 ### Native mobile sign-in and account isolation
 
 1. Install **EdgeEver**: [iPhone App Store](https://apps.apple.com/us/app/edgeever/id6792625631) · [Android Google Play](https://play.google.com/store/apps/details?id=org.edgeever.mobile).
-2. Enter `https://<vos-gateway>:1180/app/com.ictrek.v-note` in **Instance URL**, using your gateway’s actual host and port. Leave off `/api`, `/mcp` and `?local=1`. Your phone must be able to reach the gateway and trust its HTTPS certificate. No extra port mapping is needed.
+2. Enter `https://<vos-gateway>:1180/app/com.ictrek.v-note` in **Instance URL**, using your gateway’s actual host and port. Leave off `/api`, `/mcp` and `?local=1`. Use a gateway address that your phone can reach and that matches a certificate trusted by the phone’s operating system. No extra port mapping is needed.
 3. Enter your own **VOS username and password** on the same screen and tap **Sign in**. You do not need to open the web app, generate a code or create another account. Do not enter a token. If V-Note two-factor authentication is enabled, follow the app prompt.
-4. Open **All notes** and wait for the first sync to see and edit the notes you already have in VOS. Closing and reopening EdgeEver keeps you signed in. Sign in again with the same VOS credentials after sign-out or session expiry (seven days by default), or on another device.
+4. Open **All notes** and wait for the first sync to see and edit the notes you already have in VOS. Closing and reopening EdgeEver keeps you signed in. Sign in again with the same VOS credentials after sign-out or session expiry (180 days by default), or on another device.
 
-If your phone does not trust the certificate, ask your administrator to configure a trusted certificate for the VOS gateway and use the matching hostname. Do not submit your VOS password to `http://<vos-host>:22710`. If sign-in fails, first check that the same account can sign in to the VOS website. A configured local emergency `admin` can still use local access and has a separate workspace.
+Ask your administrator for a gateway URL with a certificate that your phone trusts. If your organization uses a private CA, trust must be set up on the phone by your administrator or through the operating system’s certificate settings before signing in. Do not submit your VOS password to `http://<vos-host>:22710`. If sign-in fails, first check that the same account can sign in to the VOS website. A configured local emergency `admin` can still use local access and has a separate workspace.
 
 The standalone VOS mobile app and the EdgeEver native app are separate clients. The V-Note package declares desktop VOS routes. It does not publish a VOS mobile WebView entry via `app-routers`.
 
@@ -34,7 +34,7 @@ Routes below are relative to the base URL in the table. JSON routes return `appl
 | `POST /api/v1/auth/login` | JSON `username` (trimmed 1–80), `password` (1–512), optional `deviceId` (trimmed 16–160), optional `locale` (trimmed 1–35, first-sign-in locale). Omit optional fields when unavailable. On the HTTPS VOS gateway, accepts a VOS username and password and delegates verification to VOS. No admin role is required. Existing local credentials remain supported. The direct HTTP port does not verify VOS passwords. | `200` session summary with `sessionToken` (the V-Note session Bearer value) and session cookie. The server creates or refreshes the device session. |
 | `POST /api/v1/auth/login/mfa` | JSON `challengeToken` (trimmed 16–128), exactly one of `code` (6–12) or `recoveryCode` (10–32), optional `deviceId` and `locale` with the same limits as login. | Same session shape after successful verification. Recovery-code sign-in may return `mfaRebindRequired:true` and a restricted session that must rebind MFA. |
 
-The session summary contains booleans `authRequired`, `authenticated`, `demoMode`, `vosMode`, and `user`, which is null or an object with string `id`, string `username`, nullable string `displayName` and role `owner` or `member`. `mfaRebindRequired` is present only when true. The VOS session lifetime is configured by `VNOTE_SESSION_TTL_DAYS` (default 7 days); opening the VOS app revalidates the VOS account.
+The session summary contains booleans `authRequired`, `authenticated`, `demoMode`, `vosMode`, and `user`, which is null or an object with string `id`, string `username`, nullable string `displayName` and role `owner` or `member`. `mfaRebindRequired` is present only when true. The VOS session lifetime is configured by `VNOTE_SESSION_TTL_DAYS` (default 180 days); opening the VOS app revalidates the VOS account.
 
 Example reachability and signed-out session checks:
 
