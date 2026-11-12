@@ -129,13 +129,13 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - V-Note 支持 VOS 单点登录、用户数据隔离和跟随平台语言。
-          - 提供 AMD64 与 ARM64 的 VOS 安装包。
+          - 同步 EdgeEver v2.25.0，保留 VOS 单点登录及独立工作区。
+          - 新增中英文 API 接入指南，说明 MCP、直连端口、原生客户端登录和 Token 权限。
 
           ## Key Changes
 
-          - V-Note supports VOS single sign-on, per-user data isolation, and platform language settings.
-          - A VOS package is available for AMD64 and ARM64 devices.
+          - Updated to EdgeEver v2.25.0, with VOS single sign-on and isolated workspaces.
+          - Added a bilingual API Guide covering MCP, direct connections, native client sign-in, and token scopes.
           NOTES
       - name: Connect App Store
         env:
