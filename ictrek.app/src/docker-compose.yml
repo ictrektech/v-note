@@ -1,6 +1,7 @@
 x-vnote-env: &vnote-env
   EDGE_EVER_RUNTIME: self-hosted-bun
   EDGE_EVER_VOS_MODE: "true"
+  EDGE_EVER_VOS_GATEWAY_PORT: "8788"
   EDGE_EVER_VOS_USERINFO_URL: http://${VOS_HOST_GW_IP}:${VOS_API_GW_PORT_INTERNAL}/v1000/oauth2/userinfo
   EDGE_EVER_PUBLIC_BASE_PATH: /app/com.ictrek.v-note
   EDGE_EVER_SESSION_TTL_DAYS: ${VNOTE_SESSION_TTL_DAYS:-7}
@@ -33,7 +34,7 @@ x-vnote-base: &vnote-base
     - "traefik.http.routers.v-note-app.rule=PathPrefix(`/app/com.ictrek.v-note`)"
     - "traefik.http.routers.v-note-app.middlewares=v-note-app-strip"
     - "traefik.http.middlewares.v-note-app-strip.stripprefix.prefixes=/app/com.ictrek.v-note"
-    - "traefik.http.services.v-note-app.loadbalancer.server.port=8787"
+    - "traefik.http.services.v-note-app.loadbalancer.server.port=8788"
   healthcheck:
     test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8787/api/health');if(!r.ok)process.exit(1)"]
     interval: 30s

@@ -13,7 +13,6 @@ import {
 } from "./workspace-provisioning";
 import type { DatabaseAdapter } from "./storage-contract";
 import { isVosMode } from "./vos-mode";
-import { issueVosMobilePairing } from "./vos-mobile-pairing";
 
 type VosUserInfo = {
   sub: string;
@@ -65,6 +64,7 @@ export const verifyVosAccessToken = async (env: Bindings, token: string): Promis
   try {
     response = await fetch(userinfoUrl, {
       headers: { Authorization: `Bearer ${token}` },
+      redirect: "error",
       signal: AbortSignal.timeout(VOS_USERINFO_TIMEOUT_MS),
     });
   } catch {
@@ -102,6 +102,40 @@ export const verifyVosAccessToken = async (env: Bindings, token: string): Promis
     displayName,
     role: isAdminRole(body.role_code) ? "owner" : "member",
   };
+};
+
+/** Authenticate against the fixed internal VOS platform API, never a client URL. */
+export const verifyVosPassword = async (env: Bindings, username: string, password: string): Promise<VosUser | null> => {
+  const userinfoUrl = env.EDGE_EVER_VOS_USERINFO_URL?.trim();
+  if (!userinfoUrl) {
+    throw new AppError("vos_userinfo_not_configured", "VOS userinfo URL is not configured for this instance.", 503);
+  }
+  const loginUrl = new URL("/v1000/user/login", userinfoUrl);
+  let response: Response;
+  let result: { code?: number; data?: { access_token?: unknown } } | null;
+  try {
+    response = await fetch(loginUrl, {
+      method: "POST",
+      redirect: "error",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, application: "web" }),
+      signal: AbortSignal.timeout(VOS_USERINFO_TIMEOUT_MS),
+    });
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) throw new Error();
+    result = await response.json() as typeof result;
+  } catch {
+    throw new AppError("vos_login_unavailable", "VOS sign-in is temporarily unavailable.", 503);
+  }
+  if (result?.code === 10003 || result?.code === 10005) return null;
+  if (typeof result?.code === "number" && result.code !== 0) {
+    throw new AppError("vos_login_rejected", "VOS rejected the sign-in. Check that this account can sign in to VOS.", 403);
+  }
+  const token = result?.data?.access_token;
+  if (result?.code !== 0 || typeof token !== "string" || !token) {
+    throw new AppError("vos_login_unavailable", "VOS sign-in is temporarily unavailable.", 503);
+  }
+  return verifyVosAccessToken(env, token);
 };
 
 const readUser = (db: DatabaseAdapter, userId: string) =>
@@ -215,24 +249,6 @@ export const registerVosAuthRoutes = (
     setSessionCookie: typeof setSessionCookie;
   },
 ) => {
-  app.post("/api/v1/auth/vos/pairing", async (context) => {
-    if (!isVosMode(context.env)) return notFound(context, "VOS authentication is not enabled.");
-
-    context.header("Cache-Control", "no-store");
-    const token = getBearerToken(context);
-    if (!token) return unauthorized(context, "VOS access token is required.");
-
-    const vosUser = await verifyVosAccessToken(context.env, token);
-    const db = context.env.storage.db;
-    const user = await readMappedUser(db, vosUser.subject);
-    if (!user || user.is_disabled) {
-      throw new AppError("vos_pairing_unavailable", "Open V-Note in VOS with an enabled account before pairing.", 403);
-    }
-
-    const pairing = await issueVosMobilePairing(db, user.id);
-    return context.json({ username: user.username, ...pairing });
-  });
-
   app.post("/api/v1/auth/vos", async (context) => {
     if (!isVosMode(context.env)) return notFound(context, "VOS authentication is not enabled.");
 

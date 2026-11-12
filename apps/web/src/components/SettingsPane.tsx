@@ -13,7 +13,6 @@ import {
   Shield,
   SlidersHorizontal,
   Sparkles,
-  Smartphone,
   User,
   Users,
   Wrench,
@@ -29,9 +28,7 @@ import type { ShortcutSettings } from "@/lib/app-helpers";
 import type { NoteProsePatch, ResolvedNoteProse } from "@edgeever/shared";
 import { BETA_BADGE_CLASSNAME, WORKSPACE_PAGE_TITLE_CLASSNAME } from "@/lib/workspace-ui";
 import { cn } from "@/lib/utils";
-import { isVosBuild, isVosLocalLogin } from "@/lib/vos-mode";
-import { prefersChineseContent } from "@/lib/bilingual-content-locale";
-import { VosMobilePairingCard } from "./settings/VosMobilePairingCard";
+import { isVosBuild } from "@/lib/vos-mode";
 import { AccountInfoCard } from "./settings/AccountInfoCard";
 import { DesktopScheduledBackupCard } from "./settings/DesktopScheduledBackupCard";
 import { DataExportCard } from "./settings/DataExportCard";
@@ -94,7 +91,7 @@ const SettingsGroup = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-type TabKey = "general" | "reading" | "editing" | "shortcuts" | "users" | "data" | "ai" | "mcp" | "mobile" | "speech" | "sharing" | "advanced" | "account" | "system";
+type TabKey = "general" | "reading" | "editing" | "shortcuts" | "users" | "data" | "ai" | "mcp" | "speech" | "sharing" | "advanced" | "account" | "system";
 
 interface TabItem {
   key: TabKey;
@@ -124,7 +121,7 @@ export const SettingsPane = ({
   onOpenExecutionCenter,
   onOpenMemo,
 }: SettingsPaneProps) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const selectTab = (tab: TabKey | null) => setSearchParams(tab ? { tab } : {}, { replace: true });
@@ -163,11 +160,6 @@ export const SettingsPane = ({
       label: t("settings.tabs.mcp"),
       icon: KeyRound,
     },
-    ...(isVosBuild && !isVosLocalLogin() ? [{
-      key: "mobile" as const,
-      label: prefersChineseContent(i18n.resolvedLanguage) ? "连接原生 App" : "Connect native app",
-      icon: Smartphone,
-    }] : []),
     {
       key: "speech",
       label: t("settings.tabs.speech"),
@@ -327,8 +319,6 @@ export const SettingsPane = ({
             <McpConfigCard />
           </SettingsGroup>
         );
-      case "mobile":
-        return <VosMobilePairingCard />;
       case "advanced":
         return (
           <SettingsGroup>

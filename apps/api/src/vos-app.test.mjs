@@ -126,70 +126,66 @@ describe("VOS app routing", () => {
     });
   });
 
-  test("pairs each VOS user with their own workspace and rejects unusable codes", async () => {
-    const { sqlite, environment } = createEnvironment();
-    const userinfo = Bun.serve({
+  test("authenticates VOS passwords only through the HTTPS gateway and reuses existing workspaces", async () => {
+    const { environment } = createEnvironment();
+    let platformLogins = 0;
+    const platform = Bun.serve({
       port: 0,
-      fetch(request) {
-        const subject = request.headers.get("authorization")?.slice(7);
+      async fetch(request) {
+        if (new URL(request.url).pathname === "/v1000/user/login") {
+          platformLogins++;
+          const { username, password, application } = await request.json();
+          if (username === "down") return new Response(null, { status: 503 });
+          if (!["alice", "bob", "disabled"].includes(username) ||
+              password !== `${username}-vos-password` || application !== "web") {
+            return Response.json({ code: 10003, data: null });
+          }
+          return Response.json({ code: 0, data: { access_token: `fixture-${username}` } });
+        }
+        const subject = request.headers.get("authorization")?.replace("Bearer fixture-", "");
         if (!["alice", "bob", "disabled"].includes(subject)) return new Response(null, { status: 401 });
         return Response.json({ sub: subject, preferred_username: subject, enable: subject !== "disabled" });
       },
     });
-    servers.push(userinfo);
-    environment.EDGE_EVER_VOS_USERINFO_URL = `http://127.0.0.1:${userinfo.port}/userinfo`;
-
-    const request = (path, init) => fetchEdgeEverApp(new Request(`http://localhost/api/v1/${path}`, init), environment, executionContext);
-    const vos = (route, token) => request(route, {
+    servers.push(platform);
+    environment.EDGE_EVER_VOS_USERINFO_URL = `http://127.0.0.1:${platform.port}/v1000/oauth2/userinfo`;
+    const request = (path, init, gateway = false) => fetchEdgeEverApp(
+      new Request(`http://localhost/api/v1/${path}`, init),
+      { ...environment, vosPasswordLoginAllowed: gateway },
+      executionContext,
+    );
+    const browser = await request("auth/vos", { method: "POST", headers: { Authorization: "Bearer fixture-alice" } });
+    const browserUser = (await browser.json()).user;
+    const browserCookie = browser.headers.get("set-cookie").split(";")[0];
+    const login = (username, password, gateway = true) => request("auth/login", {
       method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    const issue = (token) => vos("auth/vos/pairing", token);
-    const login = (username, password) => request("auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Forwarded-Proto": "https" },
       body: JSON.stringify({ username, password }),
-    });
-    const notebooks = async (authorization) => {
-      const response = await request("notebooks", { headers: authorization });
+    }, gateway);
+    const books = async (headers) => {
+      const response = await request("notebooks", { headers });
       expect(response.status).toBe(200);
       return (await response.json()).notebooks.map(({ id }) => id);
     };
-    expect((await issue()).status).toBe(401);
-    expect((await issue("invalid")).status).toBe(401);
-    expect((await issue("disabled")).status).toBe(403);
-    expect((await issue("alice")).status).toBe(403);
 
-    const aliceWeb = await vos("auth/vos", "alice");
-    const alice = await aliceWeb.json();
-    const bobWeb = await vos("auth/vos", "bob");
-    const bob = await bobWeb.json();
-    const aliceNotebooks = await notebooks({ Cookie: aliceWeb.headers.get("set-cookie").split(";")[0] });
-    const bobNotebooks = await notebooks({ Cookie: bobWeb.headers.get("set-cookie").split(";")[0] });
-    expect(aliceNotebooks.length).toBeGreaterThan(0);
-    expect(bobNotebooks.some((id) => aliceNotebooks.includes(id))).toBe(false);
+    const direct = await login("alice", "alice-vos-password", false);
+    expect(direct.status).toBe(403);
+    expect((await direct.json()).error.code).toBe("vos_https_required");
+    expect(platformLogins).toBe(0);
+    expect((await login("alice", "wrong")).status).toBe(401);
+    expect((await login("disabled", "disabled-vos-password")).status).toBe(403);
+    expect((await login("down", "fixture")).status).toBe(503);
+    expect((await request("auth/vos/pairing", { method: "POST" })).status).toBe(404);
 
-    const expired = await (await issue("alice")).json();
-    sqlite.query("UPDATE vos_mobile_pairings SET expires_at = ? WHERE user_id = ?")
-      .run("2000-01-01T00:00:00.000Z", alice.user.id);
-    expect((await login(alice.user.username, expired.code)).status).toBe(401);
-
-    const replaced = await (await issue("alice")).json();
-    const issued = await issue("alice");
-    expect(issued.status).toBe(200);
-    expect(issued.headers.get("cache-control")).toBe("no-store");
-    const pairing = await issued.json();
-    expect(pairing.username).toBe(alice.user.username);
-    expect(Date.parse(pairing.expiresAt) - Date.now()).toBeGreaterThan(290_000);
-    expect(sqlite.query("SELECT code_hash FROM vos_mobile_pairings").get().code_hash).not.toContain(pairing.code);
-    expect((await login(pairing.username, replaced.code)).status).toBe(401);
-    expect((await login(bob.user.username, pairing.code)).status).toBe(401);
-
-    const attempts = await Promise.all([login(pairing.username, pairing.code), login(pairing.username, pairing.code)]);
-    expect(attempts.map((response) => response.status).sort()).toEqual([200, 401]);
-    const mobile = await attempts.find((response) => response.ok).json();
-    expect(mobile.user).toEqual(alice.user);
-    expect(await notebooks({ Authorization: `Bearer ${mobile.sessionToken}` })).toEqual(aliceNotebooks);
+    const alice = await (await login("alice", "alice-vos-password")).json();
+    const bob = await (await login("bob", "bob-vos-password")).json();
+    expect(alice.user).toEqual(browserUser);
+    expect(alice.user.role).toBe("member");
+    expect(bob.user.id).not.toBe(alice.user.id);
+    const originalBooks = await books({ Cookie: browserCookie });
+    expect(originalBooks.length).toBeGreaterThan(0);
+    expect(await books({ Authorization: `Bearer ${alice.sessionToken}` })).toEqual(originalBooks);
+    expect((await books({ Authorization: `Bearer ${bob.sessionToken}` })).some((id) => originalBooks.includes(id))).toBe(false);
   });
 
   test("disables public shares, notebook publishing, and forms", async () => {

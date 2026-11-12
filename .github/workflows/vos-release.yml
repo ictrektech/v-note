@@ -129,13 +129,13 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - VOS 用户现在可以用一次性配对码登录 EdgeEver 手机 App，同步网页端的同一工作区。
-          - 更新中英文内置指南，补充配对、端口、登录状态和错误处理。
+          - EdgeEver 手机 App 可直接用 VOS 账号和密码登录，查看和编辑同一工作区的笔记。
+          - 移除配对码流程；内置中英文指南说明 HTTPS 地址、证书要求和登录方式。
 
           ## Key Changes
 
-          - VOS users can sign in to the EdgeEver mobile app with a one-time pairing code and sync the same workspace as on the web.
-          - Updated the bilingual in-app guide with pairing, server addresses, session behavior and troubleshooting.
+          - Sign in to the EdgeEver mobile app with your VOS username and password to access the same workspace as on the web.
+          - Removed the pairing step and updated both in-app guides with HTTPS and certificate requirements.
           NOTES
       - name: Connect App Store
         env:

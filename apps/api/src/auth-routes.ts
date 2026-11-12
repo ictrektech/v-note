@@ -38,6 +38,7 @@ import {
 } from "./http-errors";
 import type { DatabaseAdapter } from "./storage-contract";
 import { isVosMode } from "./vos-mode";
+import { provisionVosUser, verifyVosPassword } from "./vos-auth";
 
 export type UserRow = {
   id: string;
@@ -342,7 +343,13 @@ export const registerAuthRoutes = (
       return dependencies.tooManyLoginAttempts(context, currentRateLimit.retryAfterSeconds);
     }
 
-    const user = await dependencies.verifyLogin(context.env, input.username, input.password);
+    const vosMode = isVosMode(context.env);
+    const vosUser = vosMode && context.env.vosPasswordLoginAllowed
+      ? await verifyVosPassword(context.env, input.username, input.password)
+      : null;
+    const user = vosUser
+      ? (await provisionVosUser(context.env.storage.db, vosUser, input.locale)).user
+      : await dependencies.verifyLogin(context.env, input.username, input.password);
     if (!user) {
       const updatedRateLimit = await recordLoginFailure(
         context.env.storage.db,
@@ -360,6 +367,9 @@ export const registerAuthRoutes = (
           { retryAfterSeconds: updatedRateLimit.retryAfterSeconds },
         );
         return dependencies.tooManyLoginAttempts(context, updatedRateLimit.retryAfterSeconds);
+      }
+      if (vosMode && !context.env.vosPasswordLoginAllowed) {
+        return apiError(context, "vos_https_required", "Use the HTTPS VOS gateway address to sign in with a VOS account.", 403);
       }
       return unauthorized(context, "Username or password is incorrect.");
     }

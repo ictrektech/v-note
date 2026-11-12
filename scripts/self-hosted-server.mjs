@@ -122,9 +122,9 @@ const executionContext = {
   passThroughOnException: () => undefined,
 };
 
-const server = Bun.serve({
+const serve = (port, gateway = false) => Bun.serve({
   hostname: config.hostname,
-  port: config.port,
+  port,
   // Model providers may take longer than Bun's 10-second default to emit the
   // first streaming token. Keep the connection alive within Bun's supported range.
   idleTimeout: config.idleTimeout,
@@ -142,11 +142,19 @@ const server = Bun.serve({
       if (page) return page;
     }
     if (isEdgeEverAppPath(pathname)) {
-      return fetchEdgeEverApp(request, env, executionContext);
+      // The published LAN port never delegates passwords to VOS, even if a
+      // client supplies a forged forwarding header. Only the unpublished
+      // gateway listener accepts the TLS indication from the VOS proxy.
+      const vosPasswordLoginAllowed = gateway && request.headers.get("x-forwarded-proto") === "https";
+      return fetchEdgeEverApp(request, vosPasswordLoginAllowed ? { ...env, vosPasswordLoginAllowed } : env, executionContext);
     }
     return serveSelfHostedStatic(request, webDirectory);
   },
 });
+
+const server = serve(config.port);
+const gatewayPort = vosMode ? Number(runtimeEnvironment.EDGE_EVER_VOS_GATEWAY_PORT) : 0;
+const gateway = gatewayPort ? serve(gatewayPort, true) : null;
 
 console.log(`[self-hosted] listening on ${server.url}`);
 console.log(`[self-hosted] data directory: ${dataDirectory}`);
@@ -160,7 +168,7 @@ const shutdown = async (signal) => {
   console.log(`[self-hosted] received ${signal}; shutting down`);
 
   try {
-    await server.stop();
+    await Promise.all([server.stop(), gateway?.stop()]);
     sqlite.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     sqlite.close();
     console.log("[self-hosted] shutdown complete");

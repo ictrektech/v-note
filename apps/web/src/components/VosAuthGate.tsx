@@ -43,38 +43,6 @@ const randomValue = (bytes: number) => {
   return value;
 };
 
-export const getVosAccessToken = async (platform: VosPlatform | null = window.vos_platform ?? null) => {
-  const oauth = platform?.api?.v1000?.oauth2;
-  if (!oauth) {
-    throw new Error("Please open V-Note from VOS / 请从 VOS 打开 V-Note");
-  }
-
-  const verifier = base64url(randomValue(32));
-  const state = base64url(randomValue(24));
-  const nonce = base64url(randomValue(24));
-  const challenge = base64url(sha256(new TextEncoder().encode(verifier)));
-  const authorization = await oauth.authorize({
-    client_id: VOS_APP_ID,
-    response_type: "code",
-    scope: "openid profile email",
-    state,
-    nonce,
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-  });
-  if (authorization.state !== state || !authorization.code) {
-    throw new Error("VOS OIDC state mismatch");
-  }
-  const tokens = await oauth.token({
-    grant_type: "authorization_code",
-    client_id: VOS_APP_ID,
-    code: authorization.code,
-    code_verifier: verifier,
-  });
-  if (!tokens.access_token) throw new Error("VOS access token missing");
-  return tokens.access_token;
-};
-
 const errorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   if (/PlatformNotAuthenticated/i.test(message)) return "请先登录 VOS，然后重试。";
@@ -97,13 +65,40 @@ export const VosAuthGate = ({ children }: { children: ReactNode }) => {
 
     void (async () => {
       const platform = await waitForVosPlatform();
-      const accessToken = await getVosAccessToken(platform);
+      const oauth = platform?.api?.v1000?.oauth2;
+      if (!oauth) {
+        throw new Error("Please open V-Note from VOS / 请从 VOS 打开 V-Note");
+      }
+
+      const verifier = base64url(randomValue(32));
+      const state = base64url(randomValue(24));
+      const nonce = base64url(randomValue(24));
+      const challenge = base64url(sha256(new TextEncoder().encode(verifier)));
+      const authorization = await oauth.authorize({
+        client_id: VOS_APP_ID,
+        response_type: "code",
+        scope: "openid profile email",
+        state,
+        nonce,
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+      });
+      if (authorization.state !== state || !authorization.code) {
+        throw new Error("VOS OIDC state mismatch");
+      }
+      const tokens = await oauth.token({
+        grant_type: "authorization_code",
+        client_id: VOS_APP_ID,
+        code: authorization.code,
+        code_verifier: verifier,
+      });
+      if (!tokens.access_token) throw new Error("VOS access token missing");
 
       const response = await fetch(`${getAppBaseUrl()}/api/v1/auth/vos`, {
         method: "POST",
         credentials: "include",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${tokens.access_token}`,
           "x-edgeever-device-id": getOrCreateClientDeviceId(),
         },
       });
