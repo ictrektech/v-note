@@ -13,6 +13,8 @@ VOS 安装包已注册网关路由，同时把宿主机 TCP `22710` 映射到容
 
 在 EdgeEver 登录页填写服务器地址、用户名、密码，客户端调用 `POST /api/v1/auth/login`。VOS 首次登录为每个用户生成独立的 V-Note 身份和本地密码散列，VOS 密码不会传入 V-Note。官方 iOS / Android 应用没有 VOS OIDC 登录流程，VOS access token 和 V-Note API Token 都不能填进密码栏。手机要访问原来的 VOS 笔记，请在手机浏览器登录 VOS，再从应用抽屉打开 V-Note。
 
+在可信局域网内，若客户端允许本地 HTTP，也可在原生应用的服务器地址栏填 `http://<VOS 主机>:22710`，登录凭据要求相同。
+
 若设备所有者安装时配置了 `VNOTE_BREAK_GLASS_PASSWORD`，本地应急账号 `admin` 可以用本地密码登录。它的身份和工作区与 VOS 用户分开；如启用了两步验证，按客户端提示填写验证器代码或恢复码。遇到连接失败或证书错误，先检查地址、网络和证书。日常同步使用 VOS 浏览器入口即可。
 
 VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 安装包声明了桌面 VOS 路由，未通过 `app-routers` 声明 VOS 手机 App 的 WebView 入口。

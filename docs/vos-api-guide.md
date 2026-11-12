@@ -13,6 +13,8 @@ The gateway route is registered by the VOS package. Compose already maps host TC
 
 Open the EdgeEver app and fill in Server URL, Username and Password. This calls `POST /api/v1/auth/login`. VOS-backed users are created with a generated local password hash; the VOS password is never forwarded to V-Note. Neither the VOS access token nor a V-Note MCP token can replace the password in this form. The official iOS and Android clients do not perform the VOS iframe/OIDC flow. To use your usual VOS workspace from a phone, open VOS in a browser, sign in, then launch V-Note from the App Drawer.
 
+On a trusted LAN the native client can also use `http://<vos-host>:22710` as its server URL, if the client permits local HTTP. The login requirements are identical.
+
 If the device owner configured `VNOTE_BREAK_GLASS_PASSWORD` at installation, the local `admin` account can use password login for emergency access. It has a separate identity and workspace. If two-factor authentication is enabled for that local account, follow the native client's authenticator or recovery-code prompt. A refused connection or TLS error happens before credential verification; check address, network access and certificate trust first. For ordinary VOS accounts, use the browser flow instead of enabling the emergency account just for syncing.
 
 The standalone VOS mobile app and the EdgeEver native app are separate clients. The V-Note package declares desktop VOS routes. It does not publish a VOS mobile WebView entry via `app-routers`.
