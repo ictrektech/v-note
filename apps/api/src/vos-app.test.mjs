@@ -126,6 +126,72 @@ describe("VOS app routing", () => {
     });
   });
 
+  test("pairs each VOS user with their own workspace and rejects unusable codes", async () => {
+    const { sqlite, environment } = createEnvironment();
+    const userinfo = Bun.serve({
+      port: 0,
+      fetch(request) {
+        const subject = request.headers.get("authorization")?.slice(7);
+        if (!["alice", "bob", "disabled"].includes(subject)) return new Response(null, { status: 401 });
+        return Response.json({ sub: subject, preferred_username: subject, enable: subject !== "disabled" });
+      },
+    });
+    servers.push(userinfo);
+    environment.EDGE_EVER_VOS_USERINFO_URL = `http://127.0.0.1:${userinfo.port}/userinfo`;
+
+    const request = (path, init) => fetchEdgeEverApp(new Request(`http://localhost/api/v1/${path}`, init), environment, executionContext);
+    const vos = (route, token) => request(route, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    const issue = (token) => vos("auth/vos/pairing", token);
+    const login = (username, password) => request("auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    });
+    const notebooks = async (authorization) => {
+      const response = await request("notebooks", { headers: authorization });
+      expect(response.status).toBe(200);
+      return (await response.json()).notebooks.map(({ id }) => id);
+    };
+    expect((await issue()).status).toBe(401);
+    expect((await issue("invalid")).status).toBe(401);
+    expect((await issue("disabled")).status).toBe(403);
+    expect((await issue("alice")).status).toBe(403);
+
+    const aliceWeb = await vos("auth/vos", "alice");
+    const alice = await aliceWeb.json();
+    const bobWeb = await vos("auth/vos", "bob");
+    const bob = await bobWeb.json();
+    const aliceNotebooks = await notebooks({ Cookie: aliceWeb.headers.get("set-cookie").split(";")[0] });
+    const bobNotebooks = await notebooks({ Cookie: bobWeb.headers.get("set-cookie").split(";")[0] });
+    expect(aliceNotebooks.length).toBeGreaterThan(0);
+    expect(bobNotebooks.some((id) => aliceNotebooks.includes(id))).toBe(false);
+
+    const expired = await (await issue("alice")).json();
+    sqlite.query("UPDATE vos_mobile_pairings SET expires_at = ? WHERE user_id = ?")
+      .run("2000-01-01T00:00:00.000Z", alice.user.id);
+    expect((await login(alice.user.username, expired.code)).status).toBe(401);
+
+    const replaced = await (await issue("alice")).json();
+    const issued = await issue("alice");
+    expect(issued.status).toBe(200);
+    expect(issued.headers.get("cache-control")).toBe("no-store");
+    const pairing = await issued.json();
+    expect(pairing.username).toBe(alice.user.username);
+    expect(Date.parse(pairing.expiresAt) - Date.now()).toBeGreaterThan(290_000);
+    expect(sqlite.query("SELECT code_hash FROM vos_mobile_pairings").get().code_hash).not.toContain(pairing.code);
+    expect((await login(pairing.username, replaced.code)).status).toBe(401);
+    expect((await login(bob.user.username, pairing.code)).status).toBe(401);
+
+    const attempts = await Promise.all([login(pairing.username, pairing.code), login(pairing.username, pairing.code)]);
+    expect(attempts.map((response) => response.status).sort()).toEqual([200, 401]);
+    const mobile = await attempts.find((response) => response.ok).json();
+    expect(mobile.user).toEqual(alice.user);
+    expect(await notebooks({ Authorization: `Bearer ${mobile.sessionToken}` })).toEqual(aliceNotebooks);
+  });
+
   test("disables public shares, notebook publishing, and forms", async () => {
     const { environment } = createEnvironment();
     for (const path of [

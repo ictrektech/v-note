@@ -129,13 +129,13 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - 同步 EdgeEver v2.25.0，保留 VOS 单点登录及独立工作区。
-          - 新增中英文 API 接入指南，说明 MCP、直连端口、原生客户端登录和 Token 权限。
+          - VOS 用户现在可以用一次性配对码登录 EdgeEver 手机 App，同步网页端的同一工作区。
+          - 更新中英文内置指南，补充配对、端口、登录状态和错误处理。
 
           ## Key Changes
 
-          - Updated to EdgeEver v2.25.0, with VOS single sign-on and isolated workspaces.
-          - Added a bilingual API Guide covering MCP, direct connections, native client sign-in, and token scopes.
+          - VOS users can sign in to the EdgeEver mobile app with a one-time pairing code and sync the same workspace as on the web.
+          - Updated the bilingual in-app guide with pairing, server addresses, session behavior and troubleshooting.
           NOTES
       - name: Connect App Store
         env:

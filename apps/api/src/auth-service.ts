@@ -11,6 +11,7 @@ import {
   type InstanceAuthMode,
 } from "./auth-state";
 import { isVosMode } from "./vos-mode";
+import { consumeVosMobilePairing, isVosMobilePairingCode } from "./vos-mobile-pairing";
 import type { ApiTokenRow } from "./api-token-routes";
 import type { AppContext, AuthContext, Bindings } from "./api-context";
 import { AppError } from "./app-error";
@@ -131,6 +132,11 @@ export const verifyLogin = async (env: Bindings, username: string, password: str
   const existingUser = await getUserByUsername(env.storage.db, normalizedUsername);
 
   if (existingUser) {
+    if (isVosMode(env) && isVosMobilePairingCode(password) &&
+        await consumeVosMobilePairing(env.storage.db, existingUser.id, password)) {
+      return existingUser;
+    }
+
     if (await verifyPassword(password, existingUser.password_hash)) {
       return existingUser;
     }

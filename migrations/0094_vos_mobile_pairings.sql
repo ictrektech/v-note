@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS vos_mobile_pairings (
+  user_id TEXT NOT NULL PRIMARY KEY REFERENCES users(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  code_hash TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+);

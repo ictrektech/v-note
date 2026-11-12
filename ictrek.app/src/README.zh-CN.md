@@ -25,7 +25,7 @@ V-Scheduler 的接入地址和浏览器访问方式需要根据实际部署确�
 
 ## MCP 与手机客户端
 
-从 VOS 应用抽屉的 V-Note 分组打开「API 接入指南」，也可以从「个人中心 → API / MCP → API 接入指南」进入。网关 MCP 地址为 `https://<VOS 主机>:1180/app/com.ictrek.v-note/mcp`，使用 V-Note Bearer API Token。安装包已将局域网 HTTP 端口 `22710` 映射到容器 `8787`。EdgeEver 官方原生应用使用本地凭据；VOS 用户在手机浏览器登录 VOS 后可访问自己的笔记。服务器地址、本地应急账号边界和接口契约详见内置指南。
+从 VOS 应用抽屉的 V-Note 分组打开「API 接入指南」，也可以从「个人中心 → API / MCP → API 接入指南」进入。网关 MCP 地址为 `https://<VOS 主机>:1180/app/com.ictrek.v-note/mcp`，使用 V-Note Bearer API Token。安装包已将局域网 HTTP 端口 `22710` 映射到容器 `8787`。普通 VOS 用户可进入「个人中心 → 连接原生 App」，将显示的服务器地址、用户名和一次性配对码填入 EdgeEver 的服务器地址、用户名、密码栏。登录后同步原有的 VOS 工作区。配对码五分钟内仅可使用一次，无需另配端口。完整下载与操作步骤、排错和 API 契约见内置指南。
 
 ## 来源
 

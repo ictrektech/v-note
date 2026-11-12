@@ -13,6 +13,7 @@ import {
 } from "./workspace-provisioning";
 import type { DatabaseAdapter } from "./storage-contract";
 import { isVosMode } from "./vos-mode";
+import { issueVosMobilePairing } from "./vos-mobile-pairing";
 
 type VosUserInfo = {
   sub: string;
@@ -214,6 +215,24 @@ export const registerVosAuthRoutes = (
     setSessionCookie: typeof setSessionCookie;
   },
 ) => {
+  app.post("/api/v1/auth/vos/pairing", async (context) => {
+    if (!isVosMode(context.env)) return notFound(context, "VOS authentication is not enabled.");
+
+    context.header("Cache-Control", "no-store");
+    const token = getBearerToken(context);
+    if (!token) return unauthorized(context, "VOS access token is required.");
+
+    const vosUser = await verifyVosAccessToken(context.env, token);
+    const db = context.env.storage.db;
+    const user = await readMappedUser(db, vosUser.subject);
+    if (!user || user.is_disabled) {
+      throw new AppError("vos_pairing_unavailable", "Open V-Note in VOS with an enabled account before pairing.", 403);
+    }
+
+    const pairing = await issueVosMobilePairing(db, user.id);
+    return context.json({ username: user.username, ...pairing });
+  });
+
   app.post("/api/v1/auth/vos", async (context) => {
     if (!isVosMode(context.env)) return notFound(context, "VOS authentication is not enabled.");
 
