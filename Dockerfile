@@ -45,9 +45,12 @@ COPY packages packages
 COPY docs docs
 COPY release-summary.json release-summary.json
 COPY scripts/self-hosted-config.mjs scripts/self-hosted-secrets.mjs scripts/self-hosted-server.mjs scripts/prepare-poster-thumbnails.mjs scripts/prepare-poster-thumbnails.d.mts scripts/
+COPY scripts/self-hosted-static.mjs scripts/precompress-self-hosted-assets.mjs scripts/
+COPY scripts/self-hosted-stage-stable-assets.mjs scripts/
 COPY tests/browser/poster-thumbnail-generator.html tests/browser/poster-thumbnail-generator.ts tests/browser/
 COPY tsconfig.json ./
-RUN bun run build:web && bun run build:self-hosted
+RUN bun run build:web && bun scripts/precompress-self-hosted-assets.mjs && bun run build:self-hosted
+RUN bun scripts/self-hosted-stage-stable-assets.mjs apps/web/dist /app/web-stable
 
 FROM ${BUN_IMAGE} AS runtime
 WORKDIR /app
@@ -72,7 +75,8 @@ LABEL org.opencontainers.image.title="EdgeEver" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
 
 COPY --from=build /app/dist/self-hosted/self-hosted-server.js ./scripts/self-hosted-server.js
-COPY --from=build /app/apps/web/dist ./apps/web/dist
+COPY --link --from=build /app/web-stable /app/apps/web/dist
+COPY --link --from=build /app/apps/web/dist /app/apps/web/dist
 COPY migrations ./migrations
 COPY LICENSE ./LICENSE
 
