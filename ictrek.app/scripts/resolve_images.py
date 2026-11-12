@@ -2,14 +2,13 @@
 """Resolve the exact release tags recorded in the VOS release spreadsheet."""
 import json
 import os
-import re
 import sys
 from pathlib import Path
 from feishu_release import SPREADSHEET, col_name, request, text
+from release_version import version_key
 
 version = sys.argv[1]
-if not re.fullmatch(r'\d+\.\d+\.\d+', version):
-    raise SystemExit('invalid version')
+version_key(version)
 config_path = Path(os.environ.get('FEISHU_CONFIG_FILE', str(Path.home() / '.feishu.components.json')))
 if not config_path.exists():
     config_path = Path.home() / '.feishu.json'

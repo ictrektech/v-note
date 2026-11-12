@@ -23,10 +23,9 @@ V-Scheduler 的接入地址和浏览器访问方式需要根据实际部署确�
 - 如需本地应急管理员，在安装配置中设置 `VNOTE_BREAK_GLASS_PASSWORD`，然后打开
   `/app/com.ictrek.v-note/?local=1`；正常使用不需要该入口。
 
-## MCP
+## MCP 与手机客户端
 
-在“设置 → MCP”中创建 Token。远程 MCP 地址为
-`http://<vos-host>/app/com.ictrek.v-note/mcp`。
+从 VOS 应用抽屉的 V-Note 分组打开「API 接入指南」，也可以从「个人中心 → API / MCP → API 接入指南」进入。网关 MCP 地址为 `https://<VOS 主机>:1180/app/com.ictrek.v-note/mcp`，使用 V-Note Bearer API Token。安装包已将局域网 HTTP 端口 `22710` 映射到容器 `8787`。EdgeEver 官方原生应用使用本地凭据；VOS 用户在手机浏览器登录 VOS 后可访问自己的笔记。服务器地址、本地应急账号边界和接口契约详见内置指南。
 
 ## 来源
 

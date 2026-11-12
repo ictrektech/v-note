@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       retry_version:
-        description: 'Retry an unpublished version using its existing trigger tag'
+        description: 'Retry an unpublished release label (X.Y.Z.vos.NN)'
         required: false
         default: ''
         type: string
@@ -67,13 +67,15 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
-            VERSION="${GITHUB_REF_NAME#vos-v-note-v}"
+            LABEL="${GITHUB_REF_NAME#vos-v-note-v}"
           else
-            VERSION="$RETRY_VERSION"
+            LABEL="$RETRY_VERSION"
           fi
-          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          VERSION="$(python3 ictrek.app/scripts/release_version.py package "$LABEL")"
+          PUBLIC_TAG="v${LABEL}"
+          [[ "$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')" == "${LABEL%.vos.*}" ]]
           [[ "$(tr -d '[:space:]' < ictrek.app/VERSION)" == "$VERSION" ]]
-          TRIGGER="refs/tags/vos-v-note-v${VERSION}"
+          TRIGGER="refs/tags/vos-v-note-v${LABEL}"
           git rev-parse --verify "${TRIGGER}^{commit}" >/dev/null
           [[ "$(git diff-tree --no-commit-id --name-only -r "$TRIGGER")" == 'ictrek.app/VERSION' ]]
           git merge-base --is-ancestor "$TRIGGER" HEAD
@@ -86,10 +88,11 @@ jobs:
               *) echo "Retry changes require a new candidate: $changed" >&2; exit 1 ;;
             esac
           done < <(git diff --name-only "$SOURCE" HEAD)
-          if git rev-parse -q --verify "refs/tags/v${VERSION}^{commit}" >/dev/null; then
-            [[ "$(git rev-parse "refs/tags/v${VERSION}^{commit}")" == "$(git rev-parse HEAD)" ]] || { echo 'Public tag points to another commit' >&2; exit 1; }
+          if git rev-parse -q --verify "refs/tags/${PUBLIC_TAG}^{commit}" >/dev/null; then
+            [[ "$(git rev-parse "refs/tags/${PUBLIC_TAG}^{commit}")" == "$(git rev-parse HEAD)" ]] || { echo 'Public tag points to another commit' >&2; exit 1; }
           fi
           echo "VOS_RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "VNOTE_PUBLIC_TAG=$PUBLIC_TAG" >> "$GITHUB_ENV"
           echo "VNOTE_SOURCE_COMMIT=$SOURCE" >> "$GITHUB_ENV"
       - uses: oven-sh/setup-bun@v2
         with:
@@ -147,13 +150,14 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="$VOS_RELEASE_VERSION"
-          if ! git rev-parse -q --verify "refs/tags/v${VERSION}^{commit}" >/dev/null; then
-            git tag "v${VERSION}" "$GITHUB_SHA"
-            git push origin "v${VERSION}"
+          PUBLIC_TAG="$VNOTE_PUBLIC_TAG"
+          if ! git rev-parse -q --verify "refs/tags/${PUBLIC_TAG}^{commit}" >/dev/null; then
+            git tag "$PUBLIC_TAG" "$GITHUB_SHA"
+            git push origin "$PUBLIC_TAG"
           fi
-          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+          if gh release view "$PUBLIC_TAG" >/dev/null 2>&1; then
             mkdir -p "$RUNNER_TEMP/published"
-            gh release download "v${VERSION}" --pattern "v_note_${VERSION}_pull.tar" --dir "$RUNNER_TEMP/published"
+            gh release download "$PUBLIC_TAG" --pattern "v_note_${VERSION}_pull.tar" --dir "$RUNNER_TEMP/published"
             mkdir -p "$RUNNER_TEMP/expected" "$RUNNER_TEMP/actual"
             tar -xf "ictrek.app/dist/v_note_${VERSION}_pull.tar" -C "$RUNNER_TEMP/expected"
             tar -xf "$RUNNER_TEMP/published/v_note_${VERSION}_pull.tar" -C "$RUNNER_TEMP/actual"
@@ -163,7 +167,7 @@ jobs:
             diff -qr "$RUNNER_TEMP/expected" "$RUNNER_TEMP/actual"
             cp "$RUNNER_TEMP/published/v_note_${VERSION}_pull.tar" "ictrek.app/dist/v_note_${VERSION}_pull.tar"
           else
-            gh release create "v${VERSION}" "ictrek.app/dist/v_note_${VERSION}_pull.tar" "ictrek.app/dist/v_note_${VERSION}_pull.tar.sha256" --verify-tag --latest --title "v${VERSION}" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release create "$PUBLIC_TAG" "ictrek.app/dist/v_note_${VERSION}_pull.tar" "ictrek.app/dist/v_note_${VERSION}_pull.tar.sha256" --verify-tag --latest --title "$PUBLIC_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
       - name: Publish and verify App Store package
         run: |

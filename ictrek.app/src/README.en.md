@@ -24,10 +24,9 @@ on the deployment and must be verified.
 - For a local break-glass administrator, set `VNOTE_BREAK_GLASS_PASSWORD` during installation and open
   `/app/com.ictrek.v-note/?local=1`. Normal users do not need this path.
 
-## MCP
+## MCP and mobile clients
 
-Create a token under Settings → MCP. The remote MCP endpoint is
-`http://<vos-host>/app/com.ictrek.v-note/mcp`.
+Open **API Guide** beside **V-Note** in the VOS App Drawer, or from **Profile → API / MCP → API Guide**. Use `https://<vos-host>:1180/app/com.ictrek.v-note/mcp` with a V-Note Bearer API token. The package already maps direct LAN HTTP `22710` to container `8787`. Official EdgeEver mobile apps use local credentials; a VOS account accesses its notes through the mobile VOS browser instead. See the in-app guide for the server URL, local emergency account boundary and API contracts.
 
 ## Source
 

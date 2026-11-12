@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Copy, KeyRound, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import type { ApiToken } from "@edgeever/shared";
@@ -15,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
+import { prefersChineseContent } from "@/lib/bilingual-content-locale";
+import { isVosBuild } from "@/lib/vos-mode";
 import { cn, formatDateTime } from "@/lib/utils";
 import { AppConfirmDialog } from "@/components/dialogs/ConfirmDialogs";
 import {
@@ -328,7 +331,7 @@ const TokenList = ({ tokens, availableScopes, newlyCreatedTokenId, isLoading, is
 };
 
 export const McpConfigCard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState(() => createDefaultTokenName());
   const [accessLevel, setAccessLevel] = useState<TokenAccessLevel>(DEFAULT_TOKEN_ACCESS_LEVEL);
@@ -383,7 +386,16 @@ export const McpConfigCard = () => {
               </CardTitle>
               <CardDescription className={SETTINGS_CARD_DESCRIPTION_CLASSNAME}>{t("mcp.description")}</CardDescription>
             </div>
-            <McpExampleDialog />
+            <div className="flex flex-wrap justify-end gap-2">
+              {isVosBuild ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/api-guide">
+                    {prefersChineseContent(i18n.resolvedLanguage) ? "API 接入指南" : "API Guide"}
+                  </Link>
+                </Button>
+              ) : null}
+              <McpExampleDialog />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="grid gap-5 p-4 pt-0 sm:px-5 sm:pb-5">
