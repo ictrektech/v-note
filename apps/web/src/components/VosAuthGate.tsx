@@ -10,10 +10,11 @@ type VosOAuth = {
 
 type VosPlatform = {
   api?: { v1000?: { oauth2?: VosOAuth } };
-  getState?: () => Promise<{ locale?: unknown }>;
+  getState?: () => Promise<{ locale?: unknown; theme?: unknown }>;
   broadcast?: {
     on: {
       (event: "user-change", listener: (state: { user: unknown }) => void): () => void;
+      (event: "theme-change", listener: (state: { theme?: unknown }) => void): () => void;
       (event: "locale-change", listener: (state: { locale?: unknown }) => void): () => void;
     };
   };

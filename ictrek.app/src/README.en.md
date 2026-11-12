@@ -5,6 +5,7 @@ V-Note is an AI knowledge base and notes workspace for VOS, adapted from EdgeEve
 ## Usage
 
 - Open V-Note from the VOS application drawer. The current VOS user signs in automatically.
+- The interface theme follows VOS by default. Choose Light or Dark under Profile → General to override it.
 - When the interface language is set to “Follow system (VOS)”, it follows the platform language; you can also choose a language manually in Settings.
 - Every VOS user gets an isolated personal workspace. VOS administrators can manage instance users and storage, but cannot read other users' notes.
 - Notes, attachments, full-text search, templates, BYOK AI, and MCP/API tokens are supported.

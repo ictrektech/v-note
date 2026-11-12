@@ -409,7 +409,7 @@ export const PreferenceCard = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="system">{t("settings.themeSystem")}</SelectItem>
+                  <SelectItem value="system">{t("settings.themeSystem")}{isVosBuild ? " (VOS)" : ""}</SelectItem>
                   <SelectItem value="light">{t("settings.themeLight")}</SelectItem>
                   <SelectItem value="dark">{t("settings.themeDark")}</SelectItem>
                 </SelectContent>

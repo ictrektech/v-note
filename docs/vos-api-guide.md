@@ -20,6 +20,8 @@ Ask your administrator for a gateway URL with a certificate that your phone trus
 
 The standalone VOS mobile app and the EdgeEver native app are separate clients. The V-Note package declares desktop VOS routes. It does not publish a VOS mobile WebView entry via `app-routers`.
 
+In **Profile → General → Interface theme**, choose **Follow system (VOS)** to match the VOS interface. V-Note follows changes immediately. Choose **Light** or **Dark** to set a fixed theme. This setting has no API.
+
 ## HTTP API
 
 Routes below are relative to the base URL in the table. JSON routes return `application/json`. A V-Note session is an interactive user's `edgeever_session` cookie or V-Note session Bearer value. An API token is a workspace-scoped integration credential. A VOS access token is accepted by the VOS browser exchange route and is a different credential. Notes, notebooks and tokens are scoped to the authenticated workspace. Instance administrators manage users and storage through the application, with each user's notes remaining in that user's workspace.

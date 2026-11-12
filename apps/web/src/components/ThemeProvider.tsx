@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { isVosBuild, isVosLocalLogin } from "@/lib/vos-mode";
 import { DIAGRAM_CANVAS_LIGHT } from "@edgeever/shared/diagram-canvas";
 import {
   DEFAULT_CUSTOM_DARK_COLORS,
@@ -138,7 +139,9 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
-const THEME_STORAGE_KEY = "edgeever.theme";
+// VOS starts in platform-follow mode on upgrade. Choices made from this
+// version onward are explicit overrides of the VOS theme.
+const THEME_STORAGE_KEY = isVosBuild ? "edgeever.vos-theme" : "edgeever.theme";
 const MERMAID_THEME_STORAGE_KEY = "edgeever.mermaid-theme";
 const MARKDOWN_THEME_STORAGE_KEY = "edgeever.markdown-theme";
 const EDITOR_THEME_STORAGE_KEY = "edgeever.editor-theme";
@@ -288,8 +291,8 @@ export const getStoredCustomEditorThemes = (): CustomEditorTheme[] => {
 };
 
 
-const applyThemeToDocument = (preference: ThemePreference) => {
-  const resolvedTheme = resolveTheme(preference);
+const applyThemeToDocument = (preference: ThemePreference, vosTheme?: ResolvedTheme) => {
+  const resolvedTheme = preference === "system" && vosTheme ? vosTheme : resolveTheme(preference);
   const root = document.documentElement;
   root.classList.toggle("dark", resolvedTheme === "dark");
   root.style.colorScheme = resolvedTheme;
@@ -317,9 +320,50 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemThemeChange = () => setResolvedTheme(applyThemeToDocument("system"));
-    mediaQuery.addEventListener("change", handleSystemThemeChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
+    let vosTheme: ResolvedTheme | undefined;
+    let active = true;
+    let revision = 0;
+    let unsubscribe: (() => void) | undefined;
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const refresh = () => setResolvedTheme(applyThemeToDocument("system", vosTheme));
+    const accept = ({ theme }: { theme?: unknown }) => {
+      if (active && (theme === "light" || theme === "dark")) {
+        vosTheme = theme;
+        refresh();
+      }
+    };
+    const connect = () => {
+      let platform = window.vos_platform;
+      if (!platform) {
+        try { platform = window.parent.vos_platform; } catch { /* Cross-origin iframe. */ }
+      }
+      if (!platform?.getState && !platform?.broadcast) return false;
+      try {
+        unsubscribe = platform.broadcast?.on("theme-change", (state) => {
+          revision += 1;
+          accept(state);
+        });
+      } catch { /* Older bridges may not provide this event. */ }
+      const snapshotRevision = revision;
+      void platform.getState?.().then((state) => {
+        if (snapshotRevision === revision) accept(state);
+      }).catch(() => undefined);
+      return true;
+    };
+
+    mediaQuery.addEventListener("change", refresh);
+    if (isVosBuild && !isVosLocalLogin() && window.parent !== window && !connect()) {
+      const started = Date.now();
+      timer = setInterval(() => {
+        if (connect() || Date.now() - started >= 10_000) clearInterval(timer);
+      }, 50);
+    }
+    return () => {
+      active = false;
+      clearInterval(timer);
+      unsubscribe?.();
+      mediaQuery.removeEventListener("change", refresh);
+    };
   }, [preference]);
 
   const customEditorTheme = useMemo(() => {

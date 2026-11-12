@@ -20,6 +20,8 @@ VOS 安装包已注册网关路由，同时把宿主机 TCP `22710` 映射到容
 
 VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 安装包声明了桌面 VOS 路由，未通过 `app-routers` 声明 VOS 手机 App 的 WebView 入口。
 
+在「个人中心 → 常规设置 → 界面主题」选择「跟随系统 (VOS)」，V-Note 会随 VOS 切换明暗。也可选择「浅色」或「深色」固定主题。此设置没有 API。
+
 ## HTTP API
 
 下表路径相对于上文的应用基址。JSON 接口返回 `application/json`。V-Note 交互会话可用 `edgeever_session` Cookie 或 V-Note 会话 Bearer 值。API Token 属于指定工作区，用于集成。VOS access token 用于网页端交换 V-Note 会话。笔记、笔记本和 Token 按已认证工作区隔离。实例管理员可管理用户和存储，笔记由各自工作区的身份访问。

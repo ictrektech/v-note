@@ -130,11 +130,13 @@ jobs:
           ## 主要更新
 
           - 新签发的 V-Note 登录会话默认有效期为 180 天，适用于 EdgeEver 手机 App。
+          - 网页界面默认跟随 VOS 的明暗主题，可在常规设置中手动指定。
           - 内置中英文指南补充 HTTPS 网关地址和手机系统的证书信任要求。
 
           ## Key Changes
 
           - New V-Note sessions last 180 days by default, including EdgeEver mobile sessions.
+          - The web interface follows the VOS theme by default. Choose Light or Dark in General to override it.
           - Both in-app guides explain which HTTPS gateway address to use and how the phone trusts its certificate.
           NOTES
       - name: Connect App Store
