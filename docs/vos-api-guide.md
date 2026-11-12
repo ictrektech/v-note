@@ -15,6 +15,8 @@ Open the EdgeEver app and fill in Server URL, Username and Password. This calls 
 
 If the device owner configured `VNOTE_BREAK_GLASS_PASSWORD` at installation, the local `admin` account can use password login for emergency access. It has a separate identity and workspace. If two-factor authentication is enabled for that local account, follow the native client's authenticator or recovery-code prompt. A refused connection or TLS error happens before credential verification; check address, network access and certificate trust first. For ordinary VOS accounts, use the browser flow instead of enabling the emergency account just for syncing.
 
+The standalone VOS mobile app and the EdgeEver native app are separate clients. The V-Note package declares desktop VOS routes. It does not publish a VOS mobile WebView entry via `app-routers`.
+
 ## HTTP API
 
 Routes below are relative to the base URL in the table. JSON routes return `application/json`. A V-Note session is an interactive user's `edgeever_session` cookie or V-Note session Bearer value. An API token is a workspace-scoped integration credential. A VOS access token is accepted by the VOS exchange route and is a different credential. Notes, notebooks and tokens are scoped to the authenticated workspace. Instance administrators manage users and storage through the application, with each user's notes remaining in that user's workspace.

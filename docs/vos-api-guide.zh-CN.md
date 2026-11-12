@@ -15,6 +15,8 @@ VOS 安装包已注册网关路由，同时把宿主机 TCP `22710` 映射到容
 
 若设备所有者安装时配置了 `VNOTE_BREAK_GLASS_PASSWORD`，本地应急账号 `admin` 可以用本地密码登录。它的身份和工作区与 VOS 用户分开；如启用了两步验证，按客户端提示填写验证器代码或恢复码。遇到连接失败或证书错误，先检查地址、网络和证书。日常同步使用 VOS 浏览器入口即可。
 
+VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 安装包声明了桌面 VOS 路由，未通过 `app-routers` 声明 VOS 手机 App 的 WebView 入口。
+
 ## HTTP API
 
 下表路径相对于上文的应用基址。JSON 接口返回 `application/json`。V-Note 交互会话可用 `edgeever_session` Cookie 或 V-Note 会话 Bearer 值。API Token 属于指定工作区，用于集成。VOS access token 只用于交换 V-Note 会话。笔记、笔记本和 Token 按已认证工作区隔离。实例管理员可管理用户和存储，笔记由各自工作区的身份访问。
