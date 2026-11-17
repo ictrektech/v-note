@@ -55,11 +55,12 @@ describe("Docker release contract", () => {
   test("runs the production image as a non-root user with one persistent volume", () => {
     const dockerfile = readProjectFile("Dockerfile");
     const runtimeStage = dockerfile.slice(
-      dockerfile.indexOf("FROM oven/bun:1.3.14-alpine AS runtime"),
+      dockerfile.indexOf("FROM ${BUN_IMAGE} AS runtime"),
     );
     const packageMetadata = JSON.parse(readProjectFile("package.json"));
-    expect(dockerfile).toContain("FROM --platform=$BUILDPLATFORM oven/bun:1.3.14-alpine AS manifests");
-    expect(dockerfile).toContain("FROM oven/bun:1.3.14-alpine AS runtime");
+    expect(dockerfile).toContain("ARG BUN_IMAGE=oven/bun:1.3.14-alpine");
+    expect(dockerfile).toContain("FROM --platform=$BUILDPLATFORM ${BUN_IMAGE} AS manifests");
+    expect(dockerfile).toContain("FROM ${BUN_IMAGE} AS runtime");
     expect(dockerfile).toContain("COPY patches patches");
     expect(dockerfile).toContain("COPY docs docs");
     expect(dockerfile).toContain(
@@ -81,7 +82,7 @@ describe("Docker release contract", () => {
     );
     expect(dockerfile).toContain("RUN bun run build:web && bun run build:self-hosted");
     expect(dockerfile).toContain("scripts/prepare-poster-thumbnails.mjs scripts/prepare-poster-thumbnails.d.mts scripts/");
-    expect(dockerfile).toContain("RUN apk add --no-cache chromium nodejs");
+    expect(dockerfile).toContain('if [ "$VITE_VOS" = "true" ]; then apk add --no-cache nodejs; else apk add --no-cache chromium nodejs; fi');
     expect(dockerfile).toContain("EDGE_EVER_POSTER_CHROME_EXECUTABLE=/usr/bin/chromium");
     expect(dockerfile).toContain("COPY tests/browser/poster-thumbnail-generator.html tests/browser/poster-thumbnail-generator.ts tests/browser/");
     expect(runtimeStage).toContain(

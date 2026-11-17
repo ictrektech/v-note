@@ -3,6 +3,32 @@ import { memoTemplateSeedTranslations } from "../memo-template-seeds";
 
 // Shared by the PWA and native mobile clients.
 export const zhCN = {
+  hybrag: {
+    pauseRoot: "暂停此笔记本", resumeRoot: "恢复此笔记本", auto_paused: "后台：笔记本已暂停",
+    pauseHelp: "保存后生效。暂停保留可搜索的副本，并停止读取新内容；恢复后补齐变更。",
+    auto_scanning: "后台：正在检查笔记范围", auto_pending: "后台：等待索引", auto_indexing: "后台：正在索引一篇笔记",
+    auto_waiting: "后台：等待下次检查", auto_attention: "后台：部分笔记需要处理", auto_unavailable: "暂时无法获取后台状态，已有副本仍保留。",
+    automaticUpgrade: "请升级 HybRAG 后使用自动计划；当前仍可手动同步。",
+    schedule: "同步计划", schedule_interval: "间隔同步", schedule_night: "夜间同步", schedule_manual: "仅手动同步",
+    interval: "检查变更的间隔", minutes: "{{count}} 分钟", nightStart: "开始时刻（0–23 时）", nightEnd: "结束时刻（0–23 时）",
+    nightZone: "时区：{{zone}}。仅在此时段启动新索引任务，已经开始的任务可以在时段后完成。",
+    scheduleHelp: "自动同步会为最近的编辑等待约 1 分钟，合并改动后逐篇索引；未改动不调用模型。“立即同步”不等待。保存后生效。",
+    backgroundConsent: "保存并启用同步，即允许 HybRAG 读取选中的笔记本范围；关闭页面后仍保留这项授权。",
+    authorizationActive: "后台授权已保存；关闭页面后，设置变更仍会继续送达。",
+    authorizationPending: "正在准备后台授权；关闭页面后仍会重试送达。",
+    authorizationDisabled: "后台授权未开启。",
+    authorizationRevoking: "同步已停止，正在重试撤销授权，直到两个服务确认完成。",
+    authorizationUnavailable: "设置已保存，但后台授权暂不可用；请检查服务或稍后重试。",
+    upgrade: "当前 HybRAG 版本不支持此联动，请升级后重试。",
+    currentUser: "当前用户：{{name}}",
+    scopeChanged: "设置或笔记本层级已变化，请重新打开页面并检查所选根。",
+    skipReasons: "跳过原因：特殊格式 {{skippedType}}，内嵌资源 {{skippedResource}}，空白或过长 {{skippedSize}}。",
+    missingRoot: "已删除的笔记本（取消选择以继续）",
+    unsaved: "请先保存更改，再同步。", unbound: "HybRAG 尚未关联当前 VOS 账号。请在 HybRAG「设置 → 用户信息 → 关联 VOS 账号」确认关联，再返回此处重试。", model: "请在 HybRAG 检查默认 Embedding 模型和存储后重试。", conflict: "设置已被其他会话修改，请重新打开页面后保存。",
+    tab: "集成", title: "HybRAG", checking: "正在核对当前 VOS 用户…", connected: "已确认同一 VOS 用户", unavailable: "HybRAG 暂不可用，请检查服务是否已安装并启动。",
+    enabled: "启用同步", description: "仅允许读取选中的笔记本及其子笔记本；关闭后保留已有副本。", notebooks: "同步根笔记本", overlap: "所选根笔记本不能重叠。", save: "保存", saving: "保存中…", saved: "已保存", sync: "立即同步", syncing: "同步中…", retry: "重试", failed: "操作未完成，请检查连接后重试。",
+    manual: "“立即同步”需要保持本页面打开；已授权的间隔和夜间计划会在后台继续。", progress: "已索引：{{completed}} · 已跳过：{{skipped}} · 失败：{{failed}}", complete: "本次运行结束", inProgress: "运行未完成", empty: "启用前请至少选择一个笔记本。", source: "打开 HybRAG", recoveryRequired: "索引任务需要恢复；为避免并发，处理槽位暂时保留。", controlPending: "控制变更尚未送达 HybRAG，请重试。", caveat: "后台会对账清理已删除或移出范围的笔记副本，不等待手动索引或夜间时段。暂停、停止会保留副本；模型结果不确定时需要恢复。",
+  },
   noteImport: noteImportZhCN,
   notebookAppearance: {
     inversion: "反转",

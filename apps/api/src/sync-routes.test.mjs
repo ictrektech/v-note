@@ -89,6 +89,33 @@ const createSyncIntegrationFixture = () => {
 };
 
 describe("sync route contracts", () => {
+  test("replays changes made while the initial snapshot is being read", async () => {
+    const fixture = createSyncIntegrationFixture();
+    try {
+      const prepare = fixture.storage.db.prepare.bind(fixture.storage.db);
+      let injected = false;
+      fixture.storage.db.prepare = (sql) => {
+        if (!injected && sql.includes("FROM notebooks n") && sql.includes("GROUP BY")) {
+          injected = true;
+          fixture.sqlite.exec(`
+            UPDATE memos SET title = 'Changed during snapshot' WHERE id = 'memo_trashed';
+            INSERT INTO mobile_sync_changes (workspace_id, entity_type, entity_id, operation)
+              VALUES ('ws_1', 'memo', 'memo_trashed', 'upsert');
+          `);
+        }
+        return prepare(sql);
+      };
+      const env = { storage: fixture.storage };
+      const snapshot = await (await fixture.app.request("/api/v1/sync/bootstrap", {}, env)).json();
+      expect(injected).toBe(true);
+      const changes = await (await fixture.app.request(`/api/v1/sync/changes?cursor=${snapshot.snapshotCursor}`, {}, env)).json();
+      expect(changes.changes).toContainEqual(expect.objectContaining({
+        entityId: "memo_trashed", operation: "upsert",
+        memo: expect.objectContaining({ title: "Changed during snapshot" }),
+      }));
+    } finally { fixture.sqlite.close(); }
+  });
+
   test("opted-in continuation pages skip global counts and notebook aggregation, retaining the cursor and identity", async () => {
     const fixture = createSyncIntegrationFixture();
     try {

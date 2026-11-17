@@ -14,6 +14,7 @@ import { createSelfHostedStorageAdapter } from "../apps/api/src/self-hosted-stor
 import { isVosDisabledPagePath, isVosMode } from "../apps/api/src/vos-mode.ts";
 import { resolveSelfHostedConfig } from "./self-hosted-config.mjs";
 import { ensureSelfHostedCredentialSecrets, loadSelfHostedEnvironment } from "./self-hosted-secrets.mjs";
+import { maintainHybragDelegations } from "../apps/api/src/hybrag-delegation.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeEnvironment = await loadSelfHostedEnvironment(process.env);
@@ -113,6 +114,7 @@ const env = {
   EDGE_EVER_ALLOW_UNAUTHENTICATED: runtimeEnvironment.EDGE_EVER_ALLOW_UNAUTHENTICATED,
   EDGE_EVER_VOS_MODE: runtimeEnvironment.EDGE_EVER_VOS_MODE,
   EDGE_EVER_VOS_USERINFO_URL: runtimeEnvironment.EDGE_EVER_VOS_USERINFO_URL,
+  EDGE_EVER_HYBRAG_URL: runtimeEnvironment.EDGE_EVER_HYBRAG_URL,
   EDGE_EVER_PUBLIC_BASE_PATH: runtimeEnvironment.EDGE_EVER_PUBLIC_BASE_PATH,
   EDGE_EVER_COMMUNITY_REGISTRY_URL: runtimeEnvironment.EDGE_EVER_COMMUNITY_REGISTRY_URL,
 };
@@ -195,13 +197,24 @@ console.log(`[self-hosted] storage backend: ${config.storageBackend}`);
 console.log(`[self-hosted] idle timeout: ${config.idleTimeout}s`);
 
 let shuttingDown = false;
+let hybragMaintenance;
+const runHybragMaintenance = () => {
+  if (shuttingDown || hybragMaintenance || !vosMode) return;
+  hybragMaintenance = maintainHybragDelegations(env)
+    .catch(() => console.error("[self-hosted] HybRAG authorization maintenance will retry"))
+    .finally(() => { hybragMaintenance = undefined; });
+};
+const hybragMaintenanceTimer = vosMode ? setInterval(runHybragMaintenance, 30000) : undefined;
+runHybragMaintenance();
 const shutdown = async (signal) => {
   if (shuttingDown) return;
   shuttingDown = true;
+  if (hybragMaintenanceTimer) clearInterval(hybragMaintenanceTimer);
   console.log(`[self-hosted] received ${signal}; shutting down`);
 
   try {
     await server.stop();
+    await hybragMaintenance;
     sqlite.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     sqlite.close();
     console.log("[self-hosted] shutdown complete");

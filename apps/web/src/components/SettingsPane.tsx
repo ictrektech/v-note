@@ -29,6 +29,7 @@ import type { NoteProsePatch, ResolvedNoteProse } from "@edgeever/shared";
 import { BETA_BADGE_CLASSNAME, WORKSPACE_PAGE_TITLE_CLASSNAME } from "@/lib/workspace-ui";
 import { cn } from "@/lib/utils";
 import { isVosBuild } from "@/lib/vos-mode";
+import { HybragSettings } from "./settings/HybragSettings";
 import { AccountInfoCard } from "./settings/AccountInfoCard";
 import { DesktopScheduledBackupCard } from "./settings/DesktopScheduledBackupCard";
 import { DataExportCard } from "./settings/DataExportCard";
@@ -91,7 +92,7 @@ const SettingsGroup = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-type TabKey = "general" | "reading" | "editing" | "shortcuts" | "users" | "data" | "ai" | "mcp" | "speech" | "sharing" | "advanced" | "account" | "system";
+type TabKey = "integrations" | "general" | "reading" | "editing" | "shortcuts" | "users" | "data" | "ai" | "mcp" | "speech" | "sharing" | "advanced" | "account" | "system";
 
 interface TabItem {
   key: TabKey;
@@ -130,6 +131,7 @@ export const SettingsPane = ({
   const [devShowWebExport, setDevShowWebExport] = useState(false);
 
   const tabItems: TabItem[] = [
+    ...(isVosBuild ? [{ key: "integrations" as const, label: t("hybrag.tab"), icon: Share2 }] : []),
     {
       key: "general",
       label: t("settings.tabs.general"),
@@ -238,8 +240,10 @@ export const SettingsPane = ({
   const desktopViewport = useSyncExternalStore(subscribeViewport, isDesktopViewport);
   const renderTabContent = (key: TabKey, desktopLayout: boolean) => {
     // Backup dialogs reflect a main-process task; mount one consumer, not both CSS layouts.
-    if (key === "data" && desktopLayout !== desktopViewport) return null;
+    if ((key === "data" || key === "integrations") && desktopLayout !== desktopViewport) return null;
     switch (key) {
+      case "integrations":
+        return <HybragSettings user={user} />;
       case "general":
       case "reading":
       case "editing":

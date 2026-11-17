@@ -50,7 +50,25 @@ const firstText = (...values: Array<string | undefined>) =>
  * Verify a VOS application access token against the platform userinfo endpoint.
  * The token is never written to the database or logs.
  */
-export const verifyVosAccessToken = async (env: Bindings, token: string): Promise<VosUser> => {
+export const verifyVosAccessToken = async (
+  env: Bindings,
+  token: string,
+  options: { requireHuman?: boolean } = {},
+): Promise<VosUser> => {
+  if (options.requireHuman) {
+    const segments = token.split(".");
+    if (segments.length === 3) {
+      let application: unknown;
+      try {
+        application = (JSON.parse(atob(segments[1].replace(/-/g, "+").replace(/_/g, "/"))) as { application?: unknown }).application;
+      } catch {
+        application = undefined;
+      }
+      if (application === "app" || application === "platform") {
+        throw new AppError("vos_service_credential_rejected", "Application credentials cannot authorize personal notes.", 403);
+      }
+    }
+  }
   const userinfoUrl = env.EDGE_EVER_VOS_USERINFO_URL?.trim();
   if (!userinfoUrl) {
     throw new AppError(
@@ -65,6 +83,7 @@ export const verifyVosAccessToken = async (env: Bindings, token: string): Promis
     response = await fetch(userinfoUrl, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(VOS_USERINFO_TIMEOUT_MS),
+      ...(options.requireHuman ? { redirect: "error" as const } : {}),
     });
   } catch {
     throw new AppError("vos_userinfo_unreachable", "VOS identity service is unavailable.", 503);

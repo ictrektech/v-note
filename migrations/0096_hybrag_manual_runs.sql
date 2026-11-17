@@ -1,0 +1,20 @@
+CREATE TABLE hybrag_manual_runs (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  workspace_id TEXT NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  root_id TEXT NOT NULL,
+  config_version INTEGER NOT NULL,
+  cursor TEXT NOT NULL DEFAULT '',
+  pending_note_id TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL DEFAULT 'running',
+  completed INTEGER NOT NULL DEFAULT 0,
+  skipped INTEGER NOT NULL DEFAULT 0,
+  skipped_type INTEGER NOT NULL DEFAULT 0,
+  skipped_resource INTEGER NOT NULL DEFAULT 0,
+  skipped_size INTEGER NOT NULL DEFAULT 0,
+  failed INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT NOT NULL DEFAULT '',
+  updated_at TEXT NOT NULL,
+  lock_token TEXT NOT NULL DEFAULT '',
+  lock_until TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY(user_id, workspace_id, root_id)
+);

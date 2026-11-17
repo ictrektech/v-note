@@ -47,6 +47,7 @@ COPY release-summary.json release-summary.json
 COPY scripts/self-hosted-config.mjs scripts/self-hosted-secrets.mjs scripts/self-hosted-server.mjs scripts/prepare-poster-thumbnails.mjs scripts/prepare-poster-thumbnails.d.mts scripts/
 COPY tests/browser/poster-thumbnail-generator.html tests/browser/poster-thumbnail-generator.ts tests/browser/
 COPY tsconfig.json ./
+RUN bun run build:plugin-api
 RUN bun run build:web && bun run build:self-hosted
 
 FROM ${BUN_IMAGE} AS runtime

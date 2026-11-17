@@ -77,6 +77,13 @@ import { registerTagRoutes } from "./tag-routes";
 import { registerTemplateRoutes } from "./template-routes";
 import { registerAuthRoutes } from "./auth-routes";
 import { registerVosAuthRoutes } from "./vos-auth";
+import { registerHybragIdentityRoutes } from "./hybrag-identity";
+import { registerHybragNoteRoutes } from "./hybrag-note";
+import { registerHybragSettingsRoutes } from "./hybrag-settings";
+import { registerHybragManualRoutes } from "./hybrag-manual";
+import { registerHybragControlRoutes } from "./hybrag-control";
+import { registerHybragDelegationRoutes, maintainHybragDelegations } from "./hybrag-delegation";
+import { registerHybragSourceRoutes } from "./hybrag-source";
 import { registerApiTokenRoutes } from "./api-token-routes";
 import { registerObjectStorageRoutes } from "./object-storage-routes";
 import { registerAiRoutes } from "./ai-routes";
@@ -354,6 +361,13 @@ app.use("/api/v1/*", async (c, next) => {
 });
 
 registerImportContextGuard(app);
+registerHybragIdentityRoutes(app);
+registerHybragNoteRoutes(app);
+registerHybragSettingsRoutes(app);
+registerHybragManualRoutes(app);
+registerHybragControlRoutes(app);
+registerHybragDelegationRoutes(app);
+registerHybragSourceRoutes(app);
 
 registerObjectStorageRoutes(app, {
   isDemoMode: (...args) => isDemoMode(...args),
@@ -522,6 +536,8 @@ const worker = {
       ...env,
       storage: createCloudflareStorageAdapter(env),
     } as Bindings;
+
+    if (isVosMode(runtimeEnv)) ctx.waitUntil(maintainHybragDelegations(runtimeEnv));
 
     if (!isDemoMode(runtimeEnv)) {
       return;

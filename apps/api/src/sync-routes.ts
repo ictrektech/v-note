@@ -106,7 +106,19 @@ export const registerSyncRoutes = (
     // Initial metadata is needed once; later pages can use the first snapshot.
     // Keep the historical response for clients that do not opt out.
     const includeMetadata = !afterId || context.req.query("includeMetadata") !== "0";
-    const [notebookRows, memoRows, totalRow, cursorRow] = await Promise.all([
+    // Capture the change cursor before reading any snapshot rows. Changes made
+    // while the snapshot is read must remain visible to a subsequent replay.
+    const cursorRow = await context.env.storage.db.prepare(
+      `SELECT w.created_at AS sync_identity,
+              COALESCE((
+                SELECT MAX(c.id)
+                FROM mobile_sync_changes c
+                WHERE c.workspace_id = w.id
+              ), 0) AS cursor
+       FROM workspaces w
+       WHERE w.id = ?`,
+    ).bind(workspaceId).first<{ cursor: number; sync_identity: string }>();
+    const [notebookRows, memoRows, totalRow] = await Promise.all([
       includeMetadata ? context.env.storage.db.prepare(
         `SELECT n.id, ${syncNotebookParentIdSql} AS parent_id, n.name, n.slug, n.icon, n.color, n.text_color, n.color_target, n.is_bold, n.icon_inverted, n.row_inverted, n.sort_order,
                 n.created_at, n.updated_at, COUNT(m.id) AS memo_count, MAX(m.updated_at) AS last_memo_updated_at
@@ -130,16 +142,6 @@ export const registerSyncRoutes = (
       includeMetadata ? context.env.storage.db.prepare(
         `SELECT COUNT(*) AS count FROM memos WHERE workspace_id = ?`,
       ).bind(workspaceId).first<{ count: number }>() : Promise.resolve(null),
-      context.env.storage.db.prepare(
-        `SELECT w.created_at AS sync_identity,
-                COALESCE((
-                  SELECT MAX(c.id)
-                  FROM mobile_sync_changes c
-                  WHERE c.workspace_id = w.id
-                ), 0) AS cursor
-         FROM workspaces w
-         WHERE w.id = ?`,
-      ).bind(workspaceId).first<{ cursor: number; sync_identity: string }>(),
     ]);
     const page = memoRows.results.slice(0, limit);
     return context.json({

@@ -4,6 +4,32 @@ import { memoTemplateSeedTranslations } from "../memo-template-seeds";
 
 // Shared by the PWA and native mobile clients.
 export const enUS = {
+  hybrag: {
+    pauseRoot: "Pause this notebook", resumeRoot: "Resume this notebook", auto_paused: "Background: notebook paused",
+    pauseHelp: "Save to apply. Pausing retains searchable copies and stops new source reads. Resume to catch up.",
+    auto_scanning: "Background: checking the notebook scope", auto_pending: "Background: waiting to index", auto_indexing: "Background: indexing one note",
+    auto_waiting: "Background: waiting for the next check", auto_attention: "Background: some notes need attention", auto_unavailable: "Background status is unavailable; existing copies are retained.",
+    automaticUpgrade: "Upgrade HybRAG to use automatic schedules. The current manual sync remains available.",
+    schedule: "Synchronization schedule", schedule_interval: "At intervals", schedule_night: "At night", schedule_manual: "Manual only",
+    interval: "Check for changes every", minutes: "{{count}} minutes", nightStart: "Start hour (0–23)", nightEnd: "End hour (0–23)",
+    nightZone: "Time zone: {{zone}}. New indexing tasks start only within this window. Tasks already started may finish later.",
+    scheduleHelp: "Automatic indexing lets recent edits settle for about one minute. Unchanged notes do not invoke models; Sync now does not wait. Save to apply.",
+    backgroundConsent: "Saving enabled synchronization authorizes HybRAG to read the selected notebook trees. This authorization remains available after you close the page.",
+    authorizationActive: "Background authorization is saved. Settings changes continue to be delivered after this page closes.",
+    authorizationPending: "Preparing background authorization. Delivery will retry after this page closes.",
+    authorizationDisabled: "Background authorization is off.",
+    authorizationRevoking: "Synchronization has stopped. Authorization revocation will retry until both services confirm it.",
+    authorizationUnavailable: "Settings were saved, but background authorization is unavailable. Check the services or retry later.",
+    upgrade: "The installed HybRAG version does not support this integration. Upgrade HybRAG and retry.",
+    currentUser: "Current user: {{name}}",
+    scopeChanged: "The settings or notebook hierarchy changed. Reload this page and check the selected roots.",
+    skipReasons: "Skipped: special formats {{skippedType}}, embedded resources {{skippedResource}}, empty or too long {{skippedSize}}.",
+    missingRoot: "Deleted notebook (unselect to continue)",
+    unsaved: "Save changes before synchronizing.", unbound: "HybRAG has not associated your current VOS identity. In HybRAG, open Settings → User Profile → Associate VOS account, confirm, then return here and retry.", model: "Check the default embedding model and storage in HybRAG, then retry.", conflict: "Settings changed in another session. Reload this page before saving.",
+    tab: "Integrations", title: "HybRAG", checking: "Checking the current VOS account…", connected: "Same VOS account verified", unavailable: "HybRAG is unavailable. Check that the service is installed and running.",
+    enabled: "Enable synchronization", description: "Only selected notebook trees can be read. Existing copies remain when disabled.", notebooks: "Notebook roots", overlap: "Selected roots cannot overlap.", save: "Save", saving: "Saving…", saved: "Saved", sync: "Sync now", syncing: "Synchronizing…", retry: "Retry", failed: "Could not complete this action. Check the connection and retry.",
+    manual: "Keep this page open for a Sync now run. Authorized interval and night schedules continue in the background.", progress: "Indexed: {{completed}} · Skipped: {{skipped}} · Failed: {{failed}}", complete: "Run finished", inProgress: "Run incomplete", empty: "Select at least one notebook before enabling.", source: "Open HybRAG", recoveryRequired: "The indexing task needs recovery. Its processing slot remains reserved to prevent overlap.", controlPending: "Authorization changes are waiting for HybRAG. Retry.", caveat: "Background checks remove copies of deleted or moved-out notes even in Manual only or outside night hours. Pausing or stopping retains copies; unknown model outcomes need recovery.",
+  },
   noteImport: noteImportEnUS,
   notebookAppearance: {
     inversion: "Invert",

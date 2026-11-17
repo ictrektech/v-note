@@ -3,6 +3,32 @@ import { memoTemplateSeedTranslations } from "../memo-template-seeds";
 
 // Shared by the PWA and native mobile clients.
 export const zhTW = {
+  hybrag: {
+    pauseRoot: "暫停此筆記本", resumeRoot: "恢復此筆記本", auto_paused: "背景：筆記本已暫停",
+    pauseHelp: "儲存後生效。暫停會保留可搜尋的副本並停止讀取新內容；恢復後補齊變更。",
+    auto_scanning: "背景：正在檢查筆記範圍", auto_pending: "背景：等待索引", auto_indexing: "背景：正在索引一篇筆記",
+    auto_waiting: "背景：等待下次檢查", auto_attention: "背景：部分筆記需要處理", auto_unavailable: "暫時無法取得背景狀態，既有副本仍保留。",
+    automaticUpgrade: "請升級 HybRAG 後使用自動計畫；目前仍可手動同步。",
+    schedule: "同步計畫", schedule_interval: "間隔同步", schedule_night: "夜間同步", schedule_manual: "僅手動同步",
+    interval: "檢查變更的間隔", minutes: "{{count}} 分鐘", nightStart: "開始時刻（0–23 時）", nightEnd: "結束時刻（0–23 時）",
+    nightZone: "時區：{{zone}}。僅在此時段啟動新索引工作，已經開始的工作可以在時段後完成。",
+    scheduleHelp: "自動同步會為最近的編輯等待約 1 分鐘，合併變更後逐篇索引；未改動不呼叫模型。「立即同步」不等待。儲存後生效。",
+    backgroundConsent: "儲存並啟用同步，即允許 HybRAG 讀取選取的筆記本範圍；關閉頁面後仍保留這項授權。",
+    authorizationActive: "背景授權已儲存；關閉頁面後，設定變更仍會繼續送達。",
+    authorizationPending: "正在準備背景授權；關閉頁面後仍會重試送達。",
+    authorizationDisabled: "背景授權尚未啟用。",
+    authorizationRevoking: "同步已停止，正在重試撤銷授權，直到兩個服務確認完成。",
+    authorizationUnavailable: "設定已儲存，但背景授權暫時無法使用；請檢查服務或稍後重試。",
+    upgrade: "目前的 HybRAG 版本不支援此整合，請升級後重試。",
+    currentUser: "目前使用者：{{name}}",
+    scopeChanged: "設定或筆記本層級已變更，請重新開啟頁面並檢查所選根目錄。",
+    skipReasons: "略過原因：特殊格式 {{skippedType}}、內嵌資源 {{skippedResource}}、空白或過長 {{skippedSize}}。",
+    missingRoot: "已刪除的筆記本（取消選取以繼續）",
+    unsaved: "請先儲存變更，再同步。", unbound: "HybRAG 尚未關聯目前 VOS 帳號。請在 HybRAG「設定 → 使用者資訊 → 關聯 VOS 帳號」確認關聯，再返回此處重試。", model: "請在 HybRAG 檢查預設 Embedding 模型和儲存空間後重試。", conflict: "設定已被其他工作階段修改，請重新開啟頁面後儲存。",
+    tab: "整合", title: "HybRAG", checking: "正在核對目前的 VOS 使用者…", connected: "已確認為同一 VOS 使用者", unavailable: "HybRAG 無法使用，請檢查服務後重試。",
+    enabled: "啟用同步", description: "僅允許讀取選取的筆記本及其子筆記本；關閉後保留既有副本。", notebooks: "同步根筆記本", overlap: "所選根筆記本不可重疊。", save: "儲存", saving: "儲存中…", saved: "已儲存", sync: "立即同步", syncing: "同步中…", retry: "重試", failed: "操作未完成，請檢查連線後重試。",
+    manual: "「立即同步」需要保持此頁面開啟；已授權的間隔和夜間計畫會在背景繼續。", progress: "已索引：{{completed}} · 已略過：{{skipped}} · 失敗：{{failed}}", complete: "本次執行結束", inProgress: "執行未完成", empty: "啟用前請至少選取一個筆記本。", source: "開啟 HybRAG", recoveryRequired: "索引工作需要復原；為避免並行，處理槽位暫時保留。", controlPending: "控制變更尚未送達 HybRAG，請重試。", caveat: "背景會對帳清理已刪除或移出範圍的筆記副本，不等待手動索引或夜間時段。暫停、停止會保留副本；模型結果不確定時需要復原。",
+  },
   noteImport: noteImportZhTW,
   notebookAppearance: {
     inversion: "反轉",

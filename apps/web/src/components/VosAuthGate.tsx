@@ -50,6 +50,42 @@ const errorMessage = (error: unknown) => {
   return message || "VOS 登录失败";
 };
 
+let cachedProof: { token: string; until: number } | null = null;
+
+/** User proof remains in memory and is renewed through the VOS bridge as needed. */
+export const getVosUserProof = async (options?: { fresh?: boolean }) => {
+  if (!options?.fresh && cachedProof && cachedProof.until > Date.now()) return cachedProof.token;
+  const platform = await waitForVosPlatform();
+  const oauth = platform?.api?.v1000?.oauth2;
+  if (!oauth) throw new Error("Please open V-Note from VOS / 请从 VOS 打开 V-Note");
+  const verifier = base64url(randomValue(32));
+  const state = base64url(randomValue(24));
+  const nonce = base64url(randomValue(24));
+  const challenge = base64url(sha256(new TextEncoder().encode(verifier)));
+  const authorization = await oauth.authorize({
+    client_id: VOS_APP_ID,
+    response_type: "code",
+    scope: "openid profile email",
+    state,
+    nonce,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+  });
+  if (authorization.state !== state || !authorization.code) {
+    throw new Error("VOS OIDC state mismatch");
+  }
+  const tokens = await oauth.token({
+    grant_type: "authorization_code",
+    client_id: VOS_APP_ID,
+    code: authorization.code,
+    code_verifier: verifier,
+  });
+  if (!tokens.access_token) throw new Error("VOS access token missing");
+  cachedProof = { token: tokens.access_token, until: Date.now() + Math.max(0, (tokens.expires_in ?? 300) - 30) * 1000 };
+  return tokens.access_token;
+
+};
+
 /** VOS hosts inject this bridge only for same-origin iframe applications. */
 export const VosAuthGate = ({ children }: { children: ReactNode }) => {
   const [ready, setReady] = useState(() => !isVosBuild || isVosLocalLogin());
@@ -70,35 +106,12 @@ export const VosAuthGate = ({ children }: { children: ReactNode }) => {
         throw new Error("Please open V-Note from VOS / 请从 VOS 打开 V-Note");
       }
 
-      const verifier = base64url(randomValue(32));
-      const state = base64url(randomValue(24));
-      const nonce = base64url(randomValue(24));
-      const challenge = base64url(sha256(new TextEncoder().encode(verifier)));
-      const authorization = await oauth.authorize({
-        client_id: VOS_APP_ID,
-        response_type: "code",
-        scope: "openid profile email",
-        state,
-        nonce,
-        code_challenge: challenge,
-        code_challenge_method: "S256",
-      });
-      if (authorization.state !== state || !authorization.code) {
-        throw new Error("VOS OIDC state mismatch");
-      }
-      const tokens = await oauth.token({
-        grant_type: "authorization_code",
-        client_id: VOS_APP_ID,
-        code: authorization.code,
-        code_verifier: verifier,
-      });
-      if (!tokens.access_token) throw new Error("VOS access token missing");
-
+      const accessToken = await getVosUserProof();
       const response = await fetch(`${getAppBaseUrl()}/api/v1/auth/vos`, {
         method: "POST",
         credentials: "include",
         headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
           "x-edgeever-device-id": getOrCreateClientDeviceId(),
         },
       });
