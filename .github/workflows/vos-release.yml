@@ -129,13 +129,15 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - 个人中心新增 HybRAG 集成，可将选中的笔记本范围同步到 HybRAG，并支持手动、间隔和夜间同步。
+          - 个人中心新增 HybRAG 集成，可将选中的笔记本范围同步到 HybRAG，并支持手动同步。
+          - 在 HybRAG 支持 VOS 后台授权时，还可使用间隔或夜间自动同步。
           - 暂停或停止同步会保留已有知识库副本；后台对账会清理已删除或移出范围的笔记副本。
           - 首次使用需在 HybRAG 关联同一 VOS 账号，并配置默认 Embedding 模型。特殊格式、内嵌资源、空白或过长笔记会被跳过。
 
           ## Key Changes
 
-          - Profile → Integrations now connects selected notebook scopes to HybRAG, with manual, interval, and night schedules.
+          - Profile → Integrations now connects selected notebook scopes to HybRAG, with manual synchronization.
+          - Interval and night schedules are available when the installed HybRAG supports VOS background authorization.
           - Pausing or stopping synchronization retains existing knowledge-base copies; background reconciliation removes copies for deleted or moved-out notes.
           - First use requires the same VOS account to be associated in HybRAG and a default embedding model. Special formats, embedded resources, empty notes, and oversized notes are skipped.
           NOTES

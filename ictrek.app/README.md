@@ -25,13 +25,13 @@ The package is written to `ictrek.app/dist/v_note_<version>_pull.tar`.
 
 ## HybRAG integration
 
-In VOS, open **Profile → Integrations → HybRAG**. Select one or more non-overlapping notebook roots, choose a manual, interval, or night schedule, then save. **Sync now** keeps the page open while indexing one note at a time. Interval and night schedules continue in the background after the page closes.
+In VOS, open **Profile → Integrations → HybRAG**. Select one or more non-overlapping notebook roots, choose a manual, interval, or night schedule, then save. **Sync now** keeps the page open while indexing one note at a time. Interval and night schedules continue in the background after the page closes when the installed HybRAG supports VOS background authorization.
 
 The same VOS user must first be associated in HybRAG under **Settings → User Profile → Associate VOS account**. HybRAG must also have a working default embedding model. The integration reads only the selected notebook trees. Pausing or stopping synchronization retains existing searchable copies; background reconciliation later removes copies for deleted or moved-out notes. Special formats, embedded resources, empty notes, oversized notes, unknown model outcomes, and managed knowledge-base deletion have the limitations shown in the page.
 
 These browser and HybRAG app-to-app routes are private integration contracts, not V-Note API-token or MCP capabilities. The browser routes require a current VOS user proof from the VOS bridge. HybRAG receives only a restricted integration credential issued through the VOS grant protocol.
 
-在 VOS 中打开 **个人中心 → 集成 → HybRAG**，选择一个或多个互不重叠的笔记本根，设置手动、间隔或夜间计划后保存。“立即同步”需要保持页面打开并逐篇索引；间隔和夜间计划在关闭页面后继续运行。
+在 VOS 中打开 **个人中心 → 集成 → HybRAG**，选择一个或多个互不重叠的笔记本根，设置手动、间隔或夜间计划后保存。“立即同步”需要保持页面打开并逐篇索引；已安装的 HybRAG 支持 VOS 后台授权时，间隔和夜间计划会在关闭页面后继续运行。
 
 首次使用前，须在 HybRAG 的 **设置 → 用户信息 → 关联 VOS 账号** 确认同一 VOS 用户，并在 HybRAG 配置可用的默认 Embedding 模型。同步只读取所选笔记本子树；暂停或停止会保留已有可搜索副本，后台对账随后清理已删除或移出范围的副本。特殊格式、内嵌资源、空白或过长笔记、未知模型结果和托管知识库删除仍受页面提示的限制。
 
