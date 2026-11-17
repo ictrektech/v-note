@@ -22,6 +22,14 @@ The standalone VOS mobile app and the EdgeEver native app are separate clients. 
 
 In **Profile → General → Interface theme**, choose **Follow system (VOS)** to match the VOS interface. V-Note follows changes immediately. Choose **Light** or **Dark** to set a fixed theme. This setting has no API.
 
+### HybRAG integration
+
+In VOS, open **Profile → Integrations → HybRAG**. The same VOS user must first be associated in HybRAG under **Settings → User Profile → Associate VOS account**, and HybRAG must have a working default embedding model. Select non-overlapping notebook roots, choose **Manual only**, **At intervals**, or **At night**, and save. **Sync now** advances one note at a time while the page remains open; authorized interval and night schedules continue after it closes.
+
+Only prose Markdown in the selected notebook trees is indexed. Embedded resources, special formats, empty notes, and oversized notes are skipped and counted in the run summary. Pausing or stopping synchronization retains existing searchable copies. Background reconciliation removes copies after notes are deleted or moved out of scope, but an unknown model outcome keeps its slot reserved until recovery. Account/workspace authority, selected scope, configuration version, source identity, note content hash, and title are rechecked at the relevant boundaries.
+
+This is a private VOS app integration, not a V-Note API-token or MCP capability. Browser operations use the current VOS user proof from the VOS bridge. HybRAG uses the restricted integration credential issued through the VOS grant protocol. The integration routes under `/api/v1/integrations/hybrag/` and `/api/integrations/hybrag/` are internal contracts between the installed V-Note and HybRAG versions and are not a supported public third-party API.
+
 ## HTTP API
 
 Routes below are relative to the base URL in the table. JSON routes return `application/json`. A V-Note session is an interactive user's `edgeever_session` cookie or V-Note session Bearer value. An API token is a workspace-scoped integration credential. A VOS access token is accepted by the VOS browser exchange route and is a different credential. Notes, notebooks and tokens are scoped to the authenticated workspace. Instance administrators manage users and storage through the application, with each user's notes remaining in that user's workspace.

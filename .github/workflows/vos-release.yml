@@ -129,15 +129,15 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - 新签发的 V-Note 登录会话默认有效期为 180 天，适用于 EdgeEver 手机 App。
-          - 网页界面默认跟随 VOS 的明暗主题，可在常规设置中手动指定。
-          - 内置中英文指南补充 HTTPS 网关地址和手机系统的证书信任要求。
+          - 个人中心新增 HybRAG 集成，可将选中的笔记本范围同步到 HybRAG，并支持手动、间隔和夜间同步。
+          - 暂停或停止同步会保留已有知识库副本；后台对账会清理已删除或移出范围的笔记副本。
+          - 首次使用需在 HybRAG 关联同一 VOS 账号，并配置默认 Embedding 模型。特殊格式、内嵌资源、空白或过长笔记会被跳过。
 
           ## Key Changes
 
-          - New V-Note sessions last 180 days by default, including EdgeEver mobile sessions.
-          - The web interface follows the VOS theme by default. Choose Light or Dark in General to override it.
-          - Both in-app guides explain which HTTPS gateway address to use and how the phone trusts its certificate.
+          - Profile → Integrations now connects selected notebook scopes to HybRAG, with manual, interval, and night schedules.
+          - Pausing or stopping synchronization retains existing knowledge-base copies; background reconciliation removes copies for deleted or moved-out notes.
+          - First use requires the same VOS account to be associated in HybRAG and a default embedding model. Special formats, embedded resources, empty notes, and oversized notes are skipped.
           NOTES
       - name: Connect App Store
         env:

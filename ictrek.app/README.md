@@ -23,6 +23,20 @@ Open **API Guide** from the V-Note group in VOS, or use **Profile → API / MCP 
 
 The package is written to `ictrek.app/dist/v_note_<version>_pull.tar`.
 
+## HybRAG integration
+
+In VOS, open **Profile → Integrations → HybRAG**. Select one or more non-overlapping notebook roots, choose a manual, interval, or night schedule, then save. **Sync now** keeps the page open while indexing one note at a time. Interval and night schedules continue in the background after the page closes.
+
+The same VOS user must first be associated in HybRAG under **Settings → User Profile → Associate VOS account**. HybRAG must also have a working default embedding model. The integration reads only the selected notebook trees. Pausing or stopping synchronization retains existing searchable copies; background reconciliation later removes copies for deleted or moved-out notes. Special formats, embedded resources, empty notes, oversized notes, unknown model outcomes, and managed knowledge-base deletion have the limitations shown in the page.
+
+These browser and HybRAG app-to-app routes are private integration contracts, not V-Note API-token or MCP capabilities. The browser routes require a current VOS user proof from the VOS bridge. HybRAG receives only a restricted integration credential issued through the VOS grant protocol.
+
+在 VOS 中打开 **个人中心 → 集成 → HybRAG**，选择一个或多个互不重叠的笔记本根，设置手动、间隔或夜间计划后保存。“立即同步”需要保持页面打开并逐篇索引；间隔和夜间计划在关闭页面后继续运行。
+
+首次使用前，须在 HybRAG 的 **设置 → 用户信息 → 关联 VOS 账号** 确认同一 VOS 用户，并在 HybRAG 配置可用的默认 Embedding 模型。同步只读取所选笔记本子树；暂停或停止会保留已有可搜索副本，后台对账随后清理已删除或移出范围的副本。特殊格式、内嵌资源、空白或过长笔记、未知模型结果和托管知识库删除仍受页面提示的限制。
+
+这些浏览器与 HybRAG 的应用间接口属于私有集成契约，不通过 V-Note API Token 或 MCP 提供。浏览器接口要求 VOS 桥接签发的当前用户证明；HybRAG 只获得通过 VOS 授权协议签发的受限集成凭据。
+
 Build each profile on its matching architecture from the same source snapshot.
 Pass the local checkout's commit as `VNOTE_BUILD_COMMIT` and its actual state as
 `VNOTE_SOURCE_STATE` (`clean` or `dirty`); both are recorded as image labels.
@@ -75,7 +89,7 @@ confirms account ownership; it does not read note bodies or start indexing.
 Existing conflicting associations require administrator review. Newly created
 accounts with a strictly verified VOS user are associated automatically.
 
-The integration is not released. The current foundation adds
+This release includes
 `POST /api/v1/integrations/hybrag/identity`, requiring an authenticated V-Note
 user session and JSON `{ "accessToken": "<fresh VOS user token>" }`. The proof
 must match the session's persisted VOS subject and personal workspace. API
@@ -163,7 +177,7 @@ in-flight runs without a stored identifier stop with recovery required.
 HybRAG 持久保存游标和每篇最新待办，完整遍历成功后才对账删除或移出范围的副本；
 断网保留旧副本。个人中心可选默认 15 分钟间隔、夜间窗口或仅手动模式；后台计划不依赖
 页面保持打开。原“立即同步”单次运行仍需保持页面打开。账号/身份/个人空间权限曾被撤销后，
-恢复权限不会复活旧授权。子树暂停、删除托管知识库和完整设备验收仍待完成，未部署或发布。
+恢复权限不会复活旧授权。子树暂停和删除托管知识库仍待完成；每次 VOS 发布仍需完成旧版到新版的安装升级验收。
 
 In development, migrations 0104–0106 add scoped metadata cursors, permanent local
 authorization retirement and interval/night/manual settings. Unchanged notes do
@@ -171,8 +185,8 @@ not invoke models. HybRAG persists bookmarks and each note's latest desired stat
 only successful full scans reconcile absent copies. Outages retain old copies.
 Background schedules continue after closing the page; the existing Sync now run
 still needs its page open. Restoring revoked user/identity/personal ownership
-does not reactivate old grants. Subtree pause, managed-KB deletion and complete
-device acceptance remain pending. This has not been deployed or released.
+does not reactivate old grants. Subtree pause and managed-KB deletion remain
+pending. Each VOS release still needs its installed old-to-new upgrade check.
 
 HybRAG 的私有副本读取逐请求核验当前 VOS 用户，证明由现有桥接自动取得；停止同步后，
 正常账号仍可读取保留副本。真实账号停用和升级交互尚待设备验收。
@@ -223,15 +237,14 @@ runs remains unfinished.
 
 仍选中且未暂停的源根被删除或移到其他空间时，会以空范围重新对账，清理副本并保留空知识库
 及原名称；恢复同一根后按当前计划重新校验并补齐。暂停或停止仍保留副本；未知在途模型可能
-延后清理。已删除根不能点“立即同步”。本轮没有新增迁移，也未部署或发布。
+延后清理。已删除根不能点“立即同步”。本轮没有新增迁移；每次 VOS 发布仍需完成安装升级验收。
 
 A deleted or moved-away, still-selected unpaused source root reconciles as an
 empty scope, hiding copies while retaining the empty KB and original name.
 Restoring the same root revalidates scope and catches up under the current plan.
 Pause/stop retains copies; an unknown in-flight model outcome can defer removal.
-Sync now is disabled for missing roots. No new migration, deployment or release
-is included in this change.
-The feature has not been released or tested through a real VOS app upgrade.
+Sync now is disabled for missing roots. No new migration is included in this change.
+The release still needs its installed old-to-new VOS upgrade check.
 
 ## Upstream merges and release versions / 上游合并与版本
 

@@ -22,6 +22,14 @@ VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 
 
 在「个人中心 → 常规设置 → 界面主题」选择「跟随系统 (VOS)」，V-Note 会随 VOS 切换明暗。也可选择「浅色」或「深色」固定主题。此设置没有 API。
 
+### HybRAG 集成
+
+在 VOS 中打开 **个人中心 → 集成 → HybRAG**。首次使用前，须在 HybRAG 的 **设置 → 用户信息 → 关联 VOS 账号** 确认同一 VOS 用户，并在 HybRAG 配置可用的默认 Embedding 模型。选择一个或多个互不重叠的笔记本根，设置 **仅手动同步**、**间隔同步** 或 **夜间同步** 后保存。“立即同步”需要保持页面打开并逐篇推进；已授权的间隔和夜间计划会在关闭页面后继续。
+
+只索引所选笔记本子树中的正文 Markdown。内嵌资源、特殊格式、空白或过长笔记会被跳过，并计入运行汇总。暂停或停止同步会保留已有可搜索副本。后台对账会在笔记删除或移出范围后清理副本；模型结果未知时，处理槽位会保留到完成恢复。账号/工作区权限、所选范围、配置版本、源身份、笔记内容哈希和标题会在相应边界重新核验。
+
+这是 VOS 内的私有应用集成，不是 V-Note API Token 或 MCP 能力。浏览器操作使用 VOS 桥接提供的当前用户证明；HybRAG 使用通过 VOS 授权协议签发的受限集成凭据。`/api/v1/integrations/hybrag/` 与 `/api/integrations/hybrag/` 下的接口是已安装 V-Note 与 HybRAG 版本之间的内部契约，不作为稳定的第三方公开 API。
+
 ## HTTP API
 
 下表路径相对于上文的应用基址。JSON 接口返回 `application/json`。V-Note 交互会话可用 `edgeever_session` Cookie 或 V-Note 会话 Bearer 值。API Token 属于指定工作区，用于集成。VOS access token 用于网页端交换 V-Note 会话。笔记、笔记本和 Token 按已认证工作区隔离。实例管理员可管理用户和存储，笔记由各自工作区的身份访问。
