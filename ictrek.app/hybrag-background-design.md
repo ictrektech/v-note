@@ -2,7 +2,7 @@
 
 Status: background authorization, incremental reads and persistent scheduling
 are implemented in development source; real VOS/device acceptance is pending.
-Migrations 0100–0101 persist encrypted grants,
+Migrations 0102–0103 persist encrypted grants,
 issuance reservations and revocation outboxes. Saving enabled sync requests a
 fresh VOS proof through the bridge, with no token-copy or separate Connect step.
 The server retries controls and revocations after the page closes. Existing
@@ -170,7 +170,7 @@ acceptance remain unfinished. Private Web read liveness is described below.
 
 ## Incremental source protocol and target queue
 
-Migration 0102 exposes restricted snapshot, changes and export-note operations
+Migration 0104 exposes restricted snapshot, changes and export-note operations
 under `/api/integrations/hybrag/`. Metadata contains no bodies. Snapshots reuse
 materialized notebook scopes and indexed notebook/note bookmarks; the first
 change cursor stays fixed across pages. History has an identity, receipt and
@@ -180,12 +180,12 @@ title or location. Only export-note reads one current scoped body. Externally
 replacing a raw database requires an explicit source-identity recovery contract;
 the protocol cannot detect every possible ABA restore of identical history.
 
-Migration 0103 permanently retires grants and in-flight issuance reservations on
+Migration 0105 permanently retires grants and in-flight issuance reservations on
 local user disable/delete, identity change/unlink, loss of personal ownership or
 temporary sharing. Restoring those rows does not restore old authority. Ordinary
 profile, title and body edits do not revoke grants.
 
-Migration 0104 stores the manual/interval/night plan, exposed through a small
+Migration 0106 stores the manual/interval/night plan, exposed through a small
 plan lookup. The default interval is 15 minutes. Night windows use an explicit
 IANA zone and may cross midnight. HybRAG checks the window before admitting a new
 model job; existing requests may finish later. Manual-only starts no unattended
@@ -225,7 +225,7 @@ Real upgrade and account-disable interaction acceptance remain pending.
 
 ## Root pause and processing boundaries
 
-Migration 0105 stores selected paused roots. Pause/resume takes effect on Save;
+Migration 0107 stores selected paused roots. Pause/resume takes effect on Save;
 unselecting a root stops it instead. Both retain published copies. Root pause
 keeps the connection but denies current source reads, exports and manual steps.
 Resume requires the new delivered configuration and a full reconciliation.

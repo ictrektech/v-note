@@ -10,10 +10,11 @@ type VosOAuth = {
 
 type VosPlatform = {
   api?: { v1000?: { oauth2?: VosOAuth } };
-  getState?: () => Promise<{ locale?: unknown }>;
+  getState?: () => Promise<{ locale?: unknown; theme?: unknown }>;
   broadcast?: {
     on: {
       (event: "user-change", listener: (state: { user: unknown }) => void): () => void;
+      (event: "theme-change", listener: (state: { theme?: unknown }) => void): () => void;
       (event: "locale-change", listener: (state: { locale?: unknown }) => void): () => void;
     };
   };
@@ -83,7 +84,6 @@ export const getVosUserProof = async (options?: { fresh?: boolean }) => {
   if (!tokens.access_token) throw new Error("VOS access token missing");
   cachedProof = { token: tokens.access_token, until: Date.now() + Math.max(0, (tokens.expires_in ?? 300) - 30) * 1000 };
   return tokens.access_token;
-
 };
 
 /** VOS hosts inject this bridge only for same-origin iframe applications. */

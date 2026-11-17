@@ -19,6 +19,8 @@ VNOTE_ARM_IMAGE=swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:arm_0.0.1 \
 bash ictrek.app/scripts/package.sh
 ```
 
+Open **API Guide** from the V-Note group in VOS, or use **Profile → API / MCP → API Guide**. See the [English guide](../docs/vos-api-guide.md) and [中文指南](../docs/vos-api-guide.zh-CN.md) for gateway and direct addresses, authentication, mobile support and request examples.
+
 The package is written to `ictrek.app/dist/v_note_<version>_pull.tar`.
 
 Build each profile on its matching architecture from the same source snapshot.
@@ -92,16 +94,16 @@ single-use ticket to HybRAG, which redeems it at
 `POST /api/integrations/hybrag/redeem` with the same fresh VOS proof. Expired,
 consumed, changed, moved, deleted or no-longer-authorized notes cannot be exported.
 Only ticket hashes are stored; tickets are removed after the import request.
-Migration `0094_hybrag_note_tickets.sql` adds this transient state and leaves
-existing notes intact. Both fresh and pre-0094 schema upgrades are covered by
+Migration `0096_hybrag_note_tickets.sql` adds this transient state and leaves
+existing notes intact. Both fresh and pre-0096 schema upgrades are covered by
 automated tests; an actual VOS old-to-new upgrade remains unverified.
 
-Migration `0095_hybrag_settings.sql` adds per-user personal-space settings,
+Migration `0097_hybrag_settings.sql` adds per-user personal-space settings,
 initially disabled. `GET /api/v1/integrations/hybrag/settings` returns notebook
 names and hierarchy without bodies; `PUT` uses a version to reject stale edits and
 rejects overlapping roots. Scope and version are checked when issuing and redeeming
 each note ticket; moving selected roots into overlap blocks further exports.
-`0096_hybrag_manual_runs.sql` persists manual run progress. The VOS settings page
+`0098_hybrag_manual_runs.sql` persists manual run progress. The VOS settings page
 reuses the current user's in-memory VOS proof, discovers HybRAG and shows binding
 errors; it does not bind old accounts based on names. It advances one note at a
 time while the page is open, and can resume its persisted run. It reports an
@@ -112,18 +114,18 @@ admitted by HybRAG. Existing copies are retained and source deletions or moves a
 not yet reconciled; the UI warns about these limitations. A manual run is therefore
 not a complete mirror or deletion reconciliation.
 
-迁移 `0095_hybrag_settings.sql` 新增默认关闭的个人配置及目录选择，保存时校验版本和
+迁移 `0097_hybrag_settings.sql` 新增默认关闭的个人配置及目录选择，保存时校验版本和
 重叠范围；签发和兑换正文票据时再次检查范围。根目录移动产生重叠时阻止后续导出。
-迁移 `0096_hybrag_manual_runs.sql` 保存手动运行进度。VOS 个人中心的集成页面使用当前
+迁移 `0098_hybrag_manual_runs.sql` 保存手动运行进度。VOS 个人中心的集成页面使用当前
 用户的内存中 VOS 凭证发现 HybRAG，不按用户名自动关联旧账号。页面打开时逐篇推进，
 关闭后停止领取新笔记，可恢复进度；只有目标端报告索引完成才计入已索引。自动笔记计划
 尚未实现；后台授权及控制送达见下文。关闭或调整范围会阻止新的读取并使未兑换票据失效，但不能取消目标端
 已经接收的任务；已有副本保留，源笔记删除或移动尚不会自动清理，界面明确提示。手动
 运行因此不是完整镜像或删除对账。
 
-开发中：迁移 0097–0098 保存控制快照和送达进度；设置页使用当前用户证明投递，失败时
+开发中：迁移 0099–0100 保存控制快照和送达进度；设置页使用当前用户证明投递，失败时
 显示待重试。控制版本送达后，目标端按该版本约束发布，在途内容使用独立暂存版本。
-迁移 0100–0101 保存加密后台凭据、签发预留和撤销待办。保存“启用同步”时自动使用当前
+迁移 0102–0103 保存加密后台凭据、签发预留和撤销待办。保存“启用同步”时自动使用当前
 VOS 桥接取得的新用户证明完成授权，不复制 Token，也不需要额外连接按钮。源端每 30 秒
 有界处理控制与撤销待办，失败退避；关闭页面或服务重启后继续重试，不扫描笔记正文、不调用模型。
 后台授权任务在入队、每批索引前后和发布前核对当前平台状态、源范围、配置版本及内容版本；
@@ -131,14 +133,14 @@ VOS 桥接取得的新用户证明完成授权，不复制 Token，也不需要�
 这不是跨服务瞬时撤权保证。未取得后台能力时仍可使用原手动流程；已撤销的委托不能退回宽权限令牌。
 手动任务在发送前持久记录待处理项；发送结果不明时停止并提示需要恢复，避免把旧版本
 的完成状态误认为本次成功。当前尚无自动消除这种不确定状态的机制。
-迁移 0099 保存索引尝试标识；目标状态必须与本次尝试一致才计入完成，旧目标未返回标识时
+迁移 0101 保存索引尝试标识；目标状态必须与本次尝试一致才计入完成，旧目标未返回标识时
 停止并提示需要恢复。此前已在运行的旧任务没有标识，也会保守停止。
 
-In development: migrations 0097–0098 persist control snapshots and delivery
+In development: migrations 0099–0100 persist control snapshots and delivery
 progress. The settings page delivers them with the current user proof and shows
 pending delivery. Once a control version reaches HybRAG, publication is ordered
 against it and unfinished content stays in a separate staging generation.
-Migrations 0100–0101 persist encrypted grants, issuance reservations and revocation
+Migrations 0102–0103 persist encrypted grants, issuance reservations and revocation
 outboxes. Saving enabled sync obtains a fresh proof through the current VOS bridge;
 there is no token-copy or extra Connect step. Every 30 seconds, bounded server
 maintenance retries controls and revocations with backoff, including after page
@@ -153,17 +155,17 @@ broader human credentials.
 Manual runs persist the pending item before sending. An ambiguous delivery stops
 with recovery required rather than treating an older completed copy as success;
 automatic resolution of that ambiguity is not yet implemented.
-Migration 0099 persists the indexing attempt. A target status must match that
+Migration 0101 persists the indexing attempt. A target status must match that
 attempt before it can be counted; old targets without the identifier and older
 in-flight runs without a stored identifier stop with recovery required.
 
-开发中的增量同步使用迁移 0102–0104：仅遍历所选范围的元数据，正文未改动不调用模型。
+开发中的增量同步使用迁移 0104–0106：仅遍历所选范围的元数据，正文未改动不调用模型。
 HybRAG 持久保存游标和每篇最新待办，完整遍历成功后才对账删除或移出范围的副本；
 断网保留旧副本。个人中心可选默认 15 分钟间隔、夜间窗口或仅手动模式；后台计划不依赖
 页面保持打开。原“立即同步”单次运行仍需保持页面打开。账号/身份/个人空间权限曾被撤销后，
 恢复权限不会复活旧授权。子树暂停、删除托管知识库和完整设备验收仍待完成，未部署或发布。
 
-In development, migrations 0102–0104 add scoped metadata cursors, permanent local
+In development, migrations 0104–0106 add scoped metadata cursors, permanent local
 authorization retirement and interval/night/manual settings. Unchanged notes do
 not invoke models. HybRAG persists bookmarks and each note's latest desired state;
 only successful full scans reconcile absent copies. Outages retain old copies.
@@ -194,13 +196,13 @@ indexing admits one document at a time. A rejected/busy import returns a
 sanitized error. Automatic scheduling and move/deletion reconciliation use the
 durable flow described above; uncertain model-outcome recovery is still pending.
 
-0105 增加整根暂停：在根卡片暂停/恢复并保存，保留可检索副本，暂停期间不读取新正文。
+0107 增加整根暂停：在根卡片暂停/恢复并保存，保留可检索副本，暂停期间不读取新正文。
 自动同步对近期编辑等待约一分钟稳定期，“立即同步”不等待；实际任务开始前再次检查夜间
 窗口，已开始的单篇可完成。空根和仅手动后台连接也创建对应私有知识库，目录改名不调用
 模型；仍需配置默认 embedding 模型。未知模型结果保持槽位并显示恢复提示。单篇/子树暂停、
 知识库删除生命周期、物理清理和真实升级验收尚未完成。
 
-Migration 0105 adds whole-root pause/resume on Save, retaining searchable copies
+Migration 0107 adds whole-root pause/resume on Save, retaining searchable copies
 and blocking new body reads. Automatic sync settles recent edits for about one
 minute; Sync now does not wait. Workers recheck the night window before starting,
 while a started document may finish later. Empty roots and manual-only background
@@ -231,6 +233,16 @@ Sync now is disabled for missing roots. No new migration, deployment or release
 is included in this change.
 The feature has not been released or tested through a real VOS app upgrade.
 
+## Upstream merges and release versions / 上游合并与版本
+
+Merge the official EdgeEver release tag with Git. Resolve conflicts while retaining the VOS integration, and inspect `.github/workflows/` before committing. Only `vos-release.yml` belongs in this fork; remove incoming upstream workflows, including new files. Validate the merge against an isolated upgrade from the installed release. The upstream Cloudflare snapshot workflow is intentionally absent from V-Note.
+
+上游更新通过 Git 合并 EdgeEver 正式标签，解决冲突时保留 VOS 适配。提交前检查 `.github/workflows/`，仅保留自己的 `vos-release.yml`，包括上游新加入的工作流也要移除。用隔离实例验证已发布版本升级。V-Note 已移除上游 Cloudflare 快照同步任务。
+
+GitHub uses `vX.Y.Z.vos.01`, `vX.Y.Z.vos.02`, and so on. Each new upstream `X.Y.Z` starts at `.vos.01`. The same releases use VOS SemVer package versions `X.Y.Z-vos.1`, `X.Y.Z-vos.2`, etc., so VOS can order upgrades numerically. `update_version.sh --print` shows the next GitHub label; `--print-package` shows its VOS package version. Failed publications reuse the existing trigger via retry instead of reserving a new number.
+
+GitHub 发布标签按上游版本使用 `vX.Y.Z.vos.01`、`vX.Y.Z.vos.02` 递增，新上游版本从 `.vos.01` 重新开始。VOS 包版本对应 `X.Y.Z-vos.1`、`X.Y.Z-vos.2`，以便按 SemVer 数值排序。`update_version.sh --print` 查看下一个发布编号，`--print-package` 查看包版本。发布失败时重试已有触发标签。
+
 ## Release
 
 For a release, commit and push the tested source first. On the matching hosts,
@@ -241,7 +253,7 @@ the tags in the VOS release spreadsheet. Verify each pushed image's architecture
 full source revision, clean label and registry digest on its build host. Record
 the exact version, source revision and tag@digest references in
 `ictrek.app/release-images.json` and commit that record. Verify both tags and the
-device upgrade before running `ictrek.app/scripts/update_version.sh patch` from a clean tree.
+device upgrade before running `ictrek.app/scripts/update_version.sh` from a clean tree.
 The version bump must be the only change in its commit. The trigger tag starts
 `vos-release.yml`, which checks the recorded source revision and digests against
 the release spreadsheet,
@@ -250,6 +262,6 @@ The workflow needs `FEISHU_APP_ID`, `FEISHU_APP_SECRET`, `APPSTORE_IP` and
 `APPSTORE_TOKEN` repository secrets. Monitor the workflow and verify its release
 and store readback; a pushed tag alone does not mean publication succeeded.
 To retry a failed publication before a public tag exists, dispatch the workflow
-from the updated branch with its version in `retry_version`; it only accepts
+from the updated branch with its GitHub release label without the leading `v` in `retry_version`; it only accepts
 release-process changes since the image source. After GitHub publication, rerun
 the original workflow; it refuses a mismatched public tag or package.

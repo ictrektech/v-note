@@ -685,7 +685,7 @@ describe("single-note HybRAG source tickets", () => {
     database.exec(`CREATE TABLE hybrag_settings (user_id TEXT, workspace_id TEXT, version INTEGER, enabled INTEGER, roots_json TEXT,
       PRIMARY KEY (user_id, workspace_id));
       INSERT INTO hybrag_settings VALUES ('u', 'w', 7, 1, '["root"]');`);
-    database.exec(readFileSync("migrations/0097_hybrag_control_events.sql", "utf8"));
+    database.exec(readFileSync("migrations/0099_hybrag_control_events.sql", "utf8"));
     expect(database.query("SELECT user_id, workspace_id, version, enabled, roots_json FROM hybrag_control_events").get())
       .toEqual({ user_id: "u", workspace_id: "w", version: 7, enabled: 1, roots_json: '["root"]' });
   });

@@ -126,6 +126,68 @@ describe("VOS app routing", () => {
     });
   });
 
+  test("authenticates VOS passwords only through the HTTPS gateway and reuses existing workspaces", async () => {
+    const { environment } = createEnvironment();
+    let platformLogins = 0;
+    const platform = Bun.serve({
+      port: 0,
+      async fetch(request) {
+        if (new URL(request.url).pathname === "/v1000/user/login") {
+          platformLogins++;
+          const { username, password, application } = await request.json();
+          if (username === "down") return new Response(null, { status: 503 });
+          if (!["alice", "bob", "disabled"].includes(username) ||
+              password !== `${username}-vos-password` || application !== "web") {
+            return Response.json({ code: 10003, data: null });
+          }
+          return Response.json({ code: 0, data: { access_token: `fixture-${username}` } });
+        }
+        const subject = request.headers.get("authorization")?.replace("Bearer fixture-", "");
+        if (!["alice", "bob", "disabled"].includes(subject)) return new Response(null, { status: 401 });
+        return Response.json({ sub: subject, preferred_username: subject, enable: subject !== "disabled" });
+      },
+    });
+    servers.push(platform);
+    environment.EDGE_EVER_VOS_USERINFO_URL = `http://127.0.0.1:${platform.port}/v1000/oauth2/userinfo`;
+    const request = (path, init, gateway = false) => fetchEdgeEverApp(
+      new Request(`http://localhost/api/v1/${path}`, init),
+      { ...environment, vosPasswordLoginAllowed: gateway },
+      executionContext,
+    );
+    const browser = await request("auth/vos", { method: "POST", headers: { Authorization: "Bearer fixture-alice" } });
+    const browserUser = (await browser.json()).user;
+    const browserCookie = browser.headers.get("set-cookie").split(";")[0];
+    const login = (username, password, gateway = true) => request("auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-Proto": "https" },
+      body: JSON.stringify({ username, password }),
+    }, gateway);
+    const books = async (headers) => {
+      const response = await request("notebooks", { headers });
+      expect(response.status).toBe(200);
+      return (await response.json()).notebooks.map(({ id }) => id);
+    };
+
+    const direct = await login("alice", "alice-vos-password", false);
+    expect(direct.status).toBe(403);
+    expect((await direct.json()).error.code).toBe("vos_https_required");
+    expect(platformLogins).toBe(0);
+    expect((await login("alice", "wrong")).status).toBe(401);
+    expect((await login("disabled", "disabled-vos-password")).status).toBe(403);
+    expect((await login("down", "fixture")).status).toBe(503);
+    expect((await request("auth/vos/pairing", { method: "POST" })).status).toBe(404);
+
+    const alice = await (await login("alice", "alice-vos-password")).json();
+    const bob = await (await login("bob", "bob-vos-password")).json();
+    expect(alice.user).toEqual(browserUser);
+    expect(alice.user.role).toBe("member");
+    expect(bob.user.id).not.toBe(alice.user.id);
+    const originalBooks = await books({ Cookie: browserCookie });
+    expect(originalBooks.length).toBeGreaterThan(0);
+    expect(await books({ Authorization: `Bearer ${alice.sessionToken}` })).toEqual(originalBooks);
+    expect((await books({ Authorization: `Bearer ${bob.sessionToken}` })).some((id) => originalBooks.includes(id))).toBe(false);
+  });
+
   test("disables public shares, notebook publishing, and forms", async () => {
     const { environment } = createEnvironment();
     for (const path of [

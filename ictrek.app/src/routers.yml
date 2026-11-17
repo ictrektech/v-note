@@ -8,3 +8,11 @@ routers:
     keep-alive: true
     entry-point: true
     embed: true
+  - id: v-note-api
+    kind: page
+    title: {zh-CN: API 接入指南, en: API Guide}
+    icon: lucide:book-open
+    order: 231
+    iframe-src: /app/com.ictrek.v-note/api-guide?v=__APP_VERSION__
+    keep-alive: true
+    embed: true

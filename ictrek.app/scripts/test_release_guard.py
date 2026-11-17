@@ -7,6 +7,11 @@ class VersionGuardTest(unittest.TestCase):
         check({'code': 20207}, '0.0.7')
         check({'code': 0, 'data': {'id': 'com.ictrek.v-note', 'versions': ['0.0.6']}}, '0.0.7')
 
+    def test_orders_vos_suffixes_by_sequence(self):
+        check({'code': 0, 'data': {'id': 'com.ictrek.v-note', 'versions': ['0.0.7', '2.25.0-vos.9']}}, '2.25.0-vos.10')
+        with self.assertRaises(ValueError):
+            check({'code': 0, 'data': {'id': 'com.ictrek.v-note', 'versions': ['2.25.0-vos.10']}}, '2.25.0-vos.9')
+
     def test_refuses_overwrite_downgrade_and_unrecognized_responses(self):
         for record, version in [
             ({'code': 0, 'data': {'id': 'com.ictrek.v-note', 'versions': ['0.0.7']}}, '0.0.7'),

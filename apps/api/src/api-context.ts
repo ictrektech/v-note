@@ -39,6 +39,8 @@ export type Bindings = {
   /** Internal VOS OAuth2 userinfo endpoint used to verify browser access tokens. */
   EDGE_EVER_VOS_USERINFO_URL?: string;
   EDGE_EVER_HYBRAG_URL?: string;
+  /** Set by the runtime for requests through the internal HTTPS gateway listener. */
+  vosPasswordLoginAllowed?: boolean;
   /** Public mount path used by server-generated URLs in a VOS deployment. */
   EDGE_EVER_PUBLIC_BASE_PATH?: string;
   /** HTTPS URL of the signed community registry. Unset disables the catalog. */

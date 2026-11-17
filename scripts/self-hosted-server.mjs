@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { mkdir, readdir, readFile } from "node:fs/promises";
-import { dirname, extname, join, normalize, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { hasBootstrapCredential } from "../apps/api/src/auth-bootstrap.ts";
 import { isUnauthenticatedAccessEnabled } from "../apps/api/src/auth-state.ts";
@@ -8,13 +8,13 @@ import { isEdgeEverAppPath } from "../apps/api/src/app-paths.ts";
 import { fetchEdgeEverApp } from "../apps/api/src/index.ts";
 import { isNotebookSitePagePath, renderNotebookSitePage } from "../apps/api/src/notebook-site-page.ts";
 import { isPublicMemoSharePagePath, renderPublicMemoSharePage } from "../apps/api/src/share-page.ts";
-import { isPublicPagePath, PUBLIC_PAGE_HEADERS } from "../packages/shared/src/public-page-headers.ts";
 import { nodePublicFetch } from "../apps/api/src/node-public-network.ts";
 import { createSelfHostedStorageAdapter } from "../apps/api/src/self-hosted-storage-adapter.ts";
 import { isVosDisabledPagePath, isVosMode } from "../apps/api/src/vos-mode.ts";
 import { resolveSelfHostedConfig } from "./self-hosted-config.mjs";
 import { ensureSelfHostedCredentialSecrets, loadSelfHostedEnvironment } from "./self-hosted-secrets.mjs";
 import { maintainHybragDelegations } from "../apps/api/src/hybrag-delegation.ts";
+import { serveSelfHostedStatic } from "./self-hosted-static.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeEnvironment = await loadSelfHostedEnvironment(process.env);
@@ -124,50 +124,9 @@ const executionContext = {
   passThroughOnException: () => undefined,
 };
 
-const contentTypes = {
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".js": "text/javascript; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".png": "image/png",
-  ".svg": "image/svg+xml",
-  ".webp": "image/webp",
-  ".woff2": "font/woff2",
-};
-
-const serveStatic = async (request) => {
-  const url = new URL(request.url);
-  const requestedPath = normalize(url.pathname === "/" ? "/index.html" : url.pathname);
-  const candidate = resolve(webDirectory, `.${requestedPath}`);
-  const relativeCandidate = relative(webDirectory, candidate);
-
-  if (relativeCandidate.startsWith("..") || relativeCandidate.includes(".." + "/")) {
-    return new Response("Not Found", { status: 404 });
-  }
-
-  const file = Bun.file(candidate);
-  if (await file.exists()) {
-    return new Response(file, {
-      headers: { "Content-Type": contentTypes[extname(candidate)] ?? "application/octet-stream" },
-    });
-  }
-
-  const index = Bun.file(join(webDirectory, "index.html"));
-  return (await index.exists())
-    ? new Response(index, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          // Share and form links render the app shell; keep them out of search indexes and caches.
-          ...(isPublicPagePath(url.pathname) ? PUBLIC_PAGE_HEADERS : {}),
-        },
-      })
-    : new Response("Web build not found. Run bun run build:web first.", { status: 503 });
-};
-
-const server = Bun.serve({
+const serve = (port, gateway = false) => Bun.serve({
   hostname: config.hostname,
-  port: config.port,
+  port,
   // Model providers may take longer than Bun's 10-second default to emit the
   // first streaming token. Keep the connection alive within Bun's supported range.
   idleTimeout: config.idleTimeout,
@@ -176,7 +135,7 @@ const server = Bun.serve({
     if (vosMode && isVosDisabledPagePath(pathname)) {
       return new Response("Not Found", { status: 404 });
     }
-    const loadAppShell = () => serveStatic(new Request(new URL("/index.html", request.url)));
+    const loadAppShell = () => serveSelfHostedStatic(new Request(new URL("/index.html", request.url)), webDirectory);
     if (isNotebookSitePagePath(pathname)) {
       return renderNotebookSitePage(request, storage.db, loadAppShell);
     }
@@ -185,11 +144,19 @@ const server = Bun.serve({
       if (page) return page;
     }
     if (isEdgeEverAppPath(pathname)) {
-      return fetchEdgeEverApp(request, env, executionContext);
+      // The published LAN port never delegates passwords to VOS, even if a
+      // client supplies a forged forwarding header. Only the unpublished
+      // gateway listener accepts the TLS indication from the VOS proxy.
+      const vosPasswordLoginAllowed = gateway && request.headers.get("x-forwarded-proto") === "https";
+      return fetchEdgeEverApp(request, vosPasswordLoginAllowed ? { ...env, vosPasswordLoginAllowed } : env, executionContext);
     }
-    return serveStatic(request);
+    return serveSelfHostedStatic(request, webDirectory);
   },
 });
+
+const server = serve(config.port);
+const gatewayPort = vosMode ? Number(runtimeEnvironment.EDGE_EVER_VOS_GATEWAY_PORT) : 0;
+const gateway = gatewayPort ? serve(gatewayPort, true) : null;
 
 console.log(`[self-hosted] listening on ${server.url}`);
 console.log(`[self-hosted] data directory: ${dataDirectory}`);
@@ -213,8 +180,7 @@ const shutdown = async (signal) => {
   console.log(`[self-hosted] received ${signal}; shutting down`);
 
   try {
-    await server.stop();
-    await hybragMaintenance;
+    await Promise.all([server.stop(), gateway?.stop(), hybragMaintenance]);
     sqlite.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     sqlite.close();
     console.log("[self-hosted] shutdown complete");

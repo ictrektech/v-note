@@ -6,10 +6,7 @@ src="$app_dir/src"
 dist="$app_dir/dist"
 version="${PACKAGE_VERSION:-$(tr -d '[:space:]' < "$app_dir/VERSION")}"
 
-[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
-  echo "invalid package version: $version" >&2
-  exit 1
-}
+python3 "$app_dir/scripts/release_version.py" validate-package "$version"
 
 : "${VNOTE_AMD_IMAGE:?set VNOTE_AMD_IMAGE to the amd64 image reference}"
 : "${VNOTE_ARM_IMAGE:?set VNOTE_ARM_IMAGE to the arm64 image reference}"

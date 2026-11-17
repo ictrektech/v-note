@@ -5,6 +5,7 @@ V-Note 是运行在 VOS 上的 AI 知识库与笔记工作区，基于 EdgeEver 
 ## 使用
 
 - 从 VOS 应用抽屉打开 V-Note，使用当前 VOS 用户自动登录。
+- 界面主题默认跟随 VOS，也可在「个人中心 → 常规设置」固定为浅色或深色。
 - 界面语言设为“跟随系统 (VOS)”时跟随平台语言；也可在设置中手动选择语言。
 - 每位 VOS 用户拥有独立的笔记空间；VOS 管理员可管理实例用户和存储，但不会看到其他用户的笔记。
 - 支持笔记、附件、全文搜索、模板、AI BYOK 和 MCP/API Token。
@@ -23,10 +24,9 @@ V-Scheduler 的接入地址和浏览器访问方式需要根据实际部署确�
 - 如需本地应急管理员，在安装配置中设置 `VNOTE_BREAK_GLASS_PASSWORD`，然后打开
   `/app/com.ictrek.v-note/?local=1`；正常使用不需要该入口。
 
-## MCP
+## MCP 与手机客户端
 
-在“设置 → MCP”中创建 Token。远程 MCP 地址为
-`http://<vos-host>/app/com.ictrek.v-note/mcp`。
+从 VOS 应用抽屉的 V-Note 分组打开「API 接入指南」，也可以从「个人中心 → API / MCP → API 接入指南」进入。网关 MCP 地址为 `https://<VOS 主机>:1180/app/com.ictrek.v-note/mcp`，使用 V-Note Bearer API Token。安装包已将局域网 HTTP 端口 `22710` 映射到容器 `8787`。普通 VOS 用户可在 EdgeEver 登录页填 V-Note 的 HTTPS 网关地址、自己的 VOS 用户名和密码，进入原有工作区。新签发的 V-Note 会话默认有效期为 180 天。下载、证书和 API 契约见内置指南。
 
 ## 来源
 

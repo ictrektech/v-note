@@ -82,8 +82,8 @@ export const verifyVosAccessToken = async (
   try {
     response = await fetch(userinfoUrl, {
       headers: { Authorization: `Bearer ${token}` },
+      redirect: "error",
       signal: AbortSignal.timeout(VOS_USERINFO_TIMEOUT_MS),
-      ...(options.requireHuman ? { redirect: "error" as const } : {}),
     });
   } catch {
     throw new AppError("vos_userinfo_unreachable", "VOS identity service is unavailable.", 503);
@@ -120,6 +120,40 @@ export const verifyVosAccessToken = async (
     displayName,
     role: isAdminRole(body.role_code) ? "owner" : "member",
   };
+};
+
+/** Authenticate against the fixed internal VOS platform API, never a client URL. */
+export const verifyVosPassword = async (env: Bindings, username: string, password: string): Promise<VosUser | null> => {
+  const userinfoUrl = env.EDGE_EVER_VOS_USERINFO_URL?.trim();
+  if (!userinfoUrl) {
+    throw new AppError("vos_userinfo_not_configured", "VOS userinfo URL is not configured for this instance.", 503);
+  }
+  const loginUrl = new URL("/v1000/user/login", userinfoUrl);
+  let response: Response;
+  let result: { code?: number; data?: { access_token?: unknown } } | null;
+  try {
+    response = await fetch(loginUrl, {
+      method: "POST",
+      redirect: "error",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, application: "web" }),
+      signal: AbortSignal.timeout(VOS_USERINFO_TIMEOUT_MS),
+    });
+    if (response.status === 401 || response.status === 403) return null;
+    if (!response.ok) throw new Error();
+    result = await response.json() as typeof result;
+  } catch {
+    throw new AppError("vos_login_unavailable", "VOS sign-in is temporarily unavailable.", 503);
+  }
+  if (result?.code === 10003 || result?.code === 10005) return null;
+  if (typeof result?.code === "number" && result.code !== 0) {
+    throw new AppError("vos_login_rejected", "VOS rejected the sign-in. Check that this account can sign in to VOS.", 403);
+  }
+  const token = result?.data?.access_token;
+  if (result?.code !== 0 || typeof token !== "string" || !token) {
+    throw new AppError("vos_login_unavailable", "VOS sign-in is temporarily unavailable.", 503);
+  }
+  return verifyVosAccessToken(env, token);
 };
 
 const readUser = (db: DatabaseAdapter, userId: string) =>

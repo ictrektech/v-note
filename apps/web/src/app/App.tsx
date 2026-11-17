@@ -24,6 +24,7 @@ import { ApiRequestError, getMfaChallenge } from "@edgeever/client";
 import type { AuthSession, MfaChallenge } from "@edgeever/shared";
 import { twoFactorErrorKey } from "@/components/two-factor/TwoFactorSteps";
 
+const VosApiGuide = lazy(() => import("@/components/VosApiGuide").then((module) => ({ default: module.VosApiGuide })));
 const EvernoteImportGuidePane = lazy(() =>
   import("@/components/EvernoteImportGuidePane").then((module) => ({ default: module.EvernoteImportGuidePane }))
 );
@@ -350,6 +351,9 @@ export const App = () => {
           <Route path={EVERNOTE_MIGRATION_PATH} element={<EvernoteMigrationRoute />} />
           <Route path="/" element={<AuthenticatedWorkspace />} />
           <Route path="/settings" element={<AuthenticatedWorkspace />} />
+          {isVosBuild ? (
+            <Route path="/api-guide" element={<Suspense fallback={<AuthLoadingScreen />}><VosApiGuide /></Suspense>} />
+          ) : null}
           {!isVosBuild ? (
             <Route path="/notebooks/:notebookId/site" element={<AuthenticatedWorkspace siteManagement />} />
           ) : null}
