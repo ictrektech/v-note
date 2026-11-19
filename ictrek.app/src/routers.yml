@@ -1,3 +1,4 @@
+router-type: structured
 routers:
   - id: v-note
     kind: page
