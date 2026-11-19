@@ -1,8 +1,8 @@
 {
-  "version": "2.25.0-vos.5",
+  "version": "2.25.0-vos.6",
   "source_commit": "667f2773f6323e3dc416fffad618fd36a1e1aa78",
   "images": {
-    "VNOTE_AMD_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:amd_2.25.0-vos.5@sha256:16eba53f3cef01940f09ac1e4c2a984d525d0399167fa528140b46cf086cb32b",
-    "VNOTE_ARM_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:arm_2.25.0-vos.5@sha256:55080b203dc66f90fb56a0b8b637cef9b6e952ad8f136219249943a0edd75ed1"
+    "VNOTE_AMD_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:amd_2.25.0-vos.6@sha256:16eba53f3cef01940f09ac1e4c2a984d525d0399167fa528140b46cf086cb32b",
+    "VNOTE_ARM_IMAGE": "swr.cn-southwest-2.myhuaweicloud.com/ictrek/v-note:arm_2.25.0-vos.6@sha256:55080b203dc66f90fb56a0b8b637cef9b6e952ad8f136219249943a0edd75ed1"
   }
 }
