@@ -65,6 +65,12 @@ images and Bun/npm/system dependencies. This does not parse notes or call models
 With `pull_policy: always`, unpublished candidate images support package checks,
 but do not make a distributable upgrade package.
 
+## Office / PDF import · 文档导入
+
+In the VOS Web note list, choose **Import Office / PDF**. The paired HybRAG converts the file in the background. The new note keeps the original file as an attachment. See the [English guide](../docs/vos-api-guide.md#import-office-and-pdf-as-editable-notes) and the [Chinese guide](../docs/vos-api-guide.zh-CN.md#officepdf-转可编辑笔记).
+
+在 VOS 网页笔记列表选择 **导入 Office／PDF**。同一设备上的 HybRAG 会在后台处理，生成的笔记保留原件附件。使用说明见上方中英文指南。
+
 ## HybRAG integration development
 
 明确的索引前模型拒绝会保留进度，修复 HybRAG 默认模型后可再次“立即同步”。旧版本

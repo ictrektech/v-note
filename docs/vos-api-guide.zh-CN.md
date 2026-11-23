@@ -30,6 +30,14 @@ VOS 手机 App 和 EdgeEver 原生客户端是两个不同的客户端。V-Note 
 
 这是 VOS 内的私有应用集成，不是 V-Note API Token 或 MCP 能力。浏览器操作使用 VOS 桥接提供的当前用户证明；HybRAG 使用通过 VOS 授权协议签发的受限集成凭据。`/api/v1/integrations/hybrag/` 与 `/api/integrations/hybrag/` 下的接口是已安装 V-Note 与 HybRAG 版本之间的内部契约，不作为稳定的第三方公开 API。
 
+### Office／PDF 转可编辑笔记
+
+在 VOS 网页工作区选择笔记本，点击笔记列表上方的 **导入 Office／PDF**，选取一个 DOCX、XLSX、PPTX 或 PDF 文件。打开 **导入记录** 可以查看进度、重试失败任务或打开结果。离开页面后转换仍会继续。V-Note 将提取的正文、标题、列表、表格及支持的图片保存为普通笔记，并将原件保存为可下载的附件。需要核对原始版式、表格公式或幻灯片布局时，可以下载原件。
+
+请在同一 VOS 设备安装兼容版本的 HybRAG，并在 HybRAG 关联同一个 VOS 账号。扫描 PDF 使用当前租户配置的 OCR 解析器或默认视觉模型。租户使用云端 OCR 服务时，文档数据可能发往该服务。单文件上限为 100 MiB，以部署实际更低的限制为准。聊天附件的 8 页 OCR 上限不适用于此入口。扫描页无法识别时，导入会提示失败，修复 OCR 配置或文件后可重试。转换无需知识库或 Embedding 模型。
+
+导入接口是 VOS 网页和应用间的私有契约。现有公开 HTTP API 和 MCP 可按原有权限访问生成的普通笔记和资源。
+
 ## HTTP API
 
 下表路径相对于上文的应用基址。JSON 接口返回 `application/json`。V-Note 交互会话可用 `edgeever_session` Cookie 或 V-Note 会话 Bearer 值。API Token 属于指定工作区，用于集成。VOS access token 用于网页端交换 V-Note 会话。笔记、笔记本和 Token 按已认证工作区隔离。实例管理员可管理用户和存储，笔记由各自工作区的身份访问。

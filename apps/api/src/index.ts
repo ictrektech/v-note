@@ -83,6 +83,7 @@ import { registerHybragSettingsRoutes } from "./hybrag-settings";
 import { registerHybragManualRoutes } from "./hybrag-manual";
 import { registerHybragControlRoutes } from "./hybrag-control";
 import { registerHybragDelegationRoutes, maintainHybragDelegations } from "./hybrag-delegation";
+import { registerDocumentImportRoutes } from "./document-imports";
 import { registerHybragSourceRoutes } from "./hybrag-source";
 import { registerApiTokenRoutes } from "./api-token-routes";
 import { registerObjectStorageRoutes } from "./object-storage-routes";
@@ -367,6 +368,7 @@ registerHybragSettingsRoutes(app);
 registerHybragManualRoutes(app);
 registerHybragControlRoutes(app);
 registerHybragDelegationRoutes(app);
+registerDocumentImportRoutes(app);
 registerHybragSourceRoutes(app);
 
 registerObjectStorageRoutes(app, {

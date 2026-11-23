@@ -32,3 +32,11 @@ Open **API Guide** beside **V-Note** in the VOS App Drawer, or from **Profile â†
 ## Source
 
 This application is adapted from EdgeEver (AGPL-3.0). The public fork is https://github.com/ictrektech/v-note.
+
+### Import Office and PDF as editable notes
+
+In the VOS Web workspace, select a notebook and click **Import Office / PDF** above its note list. Choose one DOCX, XLSX, PPTX or PDF file. Open **Import history** to check progress, retry a failure, or open the result. Conversion continues after you close the page. V-Note saves the extracted text, headings, lists, tables and supported images in a normal note and includes the original as a downloadable attachment. Use the original to check layout, spreadsheet formulas or slide positioning.
+
+Install a compatible HybRAG on the same VOS device and associate the same VOS account in HybRAG. Scanned PDFs use the associated tenant's configured OCR parser or default vision model. If the tenant uses a cloud OCR service, document data may be sent to that service. The per-file limit is 100 MiB or a lower limit imposed by the deployment. The chat attachment eight-page OCR limit does not apply. If a scanned page cannot be recognized, the import reports a failure. Update the OCR configuration or correct the file before retrying. Import needs neither a knowledge base nor an embedding model.
+
+The import endpoints are private VOS Web and app-to-app contracts. The existing public HTTP API and MCP still support reading and editing the resulting regular note and its resources with the applicable scopes.
