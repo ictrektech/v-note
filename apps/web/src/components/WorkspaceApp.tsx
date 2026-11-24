@@ -2653,13 +2653,13 @@ export const WorkspaceApp = ({
   }, [clearMemoSelection, clearPendingCreatedMemo, focusDetachedMemo, navigateWorkspaceHome, setSelectedMemoId, setSelectedNotebookId]);
 
   const handleOpenImportedMemo = useCallback((memoId: string, notebookId: string) => {
-    void Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["memos"] }),
-      queryClient.invalidateQueries({ queryKey: ["notebooks"] }),
-      queryClient.invalidateQueries({ queryKey: ["resources"] }),
-    ]);
     handleOpenPluginNote(memoId, notebookId);
-  }, [handleOpenPluginNote, queryClient]);
+    // Imported notes are created on the server. The list reads from the local
+    // mirror, so pull that change before invalidating the visible queries.
+    void refreshWorkspaceFromServer("manual").catch(() => {
+      // Keep the imported note open; the next background refresh retries the list.
+    });
+  }, [handleOpenPluginNote, refreshWorkspaceFromServer]);
 
   const handleOpenLinkedMemo = useMemoLinkNavigation({
     repository,
