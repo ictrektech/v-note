@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileUp, History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ type ImportJob = {
   pagesDone: number | null;
   pagesTotal: number | null;
 };
+
+type ImportJobs = { imports: ImportJob[] };
 
 const route = "/api/v1/integrations/hybrag/document-imports";
 
@@ -40,8 +42,18 @@ export function DocumentImportControls({ notebookId, scope, onOpenMemo }: {
   const [error, setError] = useState("");
   const [active, setActive] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
+  const jobsKey = ["document-imports", scope] as const;
+  const cacheJob = (job: ImportJob) => queryClient.setQueryData<ImportJobs>(jobsKey, (previous) => {
+    if (!previous) return { imports: [job] };
+    return {
+      imports: previous.imports.some((item) => item.id === job.id)
+        ? previous.imports.map((item) => item.id === job.id ? job : item)
+        : [job, ...previous.imports],
+    };
+  });
   const jobs = useQuery({
-    queryKey: ["document-imports", scope],
+    queryKey: jobsKey,
     enabled: open || active !== null,
     queryFn: () => request<{ imports: ImportJob[] }>(),
     refetchInterval: (query) => active || query.state.data?.imports.some((job) => job.state === "queued" || job.state === "processing") ? 3000 : false,
@@ -68,7 +80,10 @@ export function DocumentImportControls({ notebookId, scope, onOpenMemo }: {
       form.set("file", file);
       form.set("proof", await getVosUserProof());
       const result = await request<{ import: ImportJob }>("", { method: "POST", body: form });
-      if (result.import.state !== "failed") setActive(result.import.id);
+      if (result.import.state !== "failed") {
+        setActive(result.import.id);
+        cacheJob(result.import);
+      }
       await jobs.refetch();
     } catch (error) {
       setError(error instanceof Error ? error.message : "unknown");
@@ -87,7 +102,10 @@ export function DocumentImportControls({ notebookId, scope, onOpenMemo }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proof: await getVosUserProof() }),
       });
-      if (result.state !== "failed") setActive(result.id);
+      if (result.state !== "failed") {
+        setActive(result.id);
+        cacheJob(result);
+      }
       await jobs.refetch();
     } catch (error) {
       setError(error instanceof Error ? error.message : "unknown");
