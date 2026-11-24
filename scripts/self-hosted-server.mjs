@@ -14,6 +14,7 @@ import { isVosDisabledPagePath, isVosMode } from "../apps/api/src/vos-mode.ts";
 import { resolveSelfHostedConfig } from "./self-hosted-config.mjs";
 import { ensureSelfHostedCredentialSecrets, loadSelfHostedEnvironment } from "./self-hosted-secrets.mjs";
 import { maintainHybragDelegations } from "../apps/api/src/hybrag-delegation.ts";
+import { maintainDocumentImports } from "../apps/api/src/document-imports.ts";
 import { serveSelfHostedStatic } from "./self-hosted-static.mjs";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -173,14 +174,26 @@ const runHybragMaintenance = () => {
 };
 const hybragMaintenanceTimer = vosMode ? setInterval(runHybragMaintenance, 30000) : undefined;
 runHybragMaintenance();
+
+let documentImports;
+const runDocumentImports = () => {
+  if (shuttingDown || documentImports || !vosMode) return;
+  documentImports = maintainDocumentImports(env)
+    .catch(() => console.error("[self-hosted] document import maintenance will retry"))
+    .finally(() => { documentImports = undefined; });
+};
+const documentImportTimer = vosMode ? setInterval(runDocumentImports, 5000) : undefined;
+runDocumentImports();
+
 const shutdown = async (signal) => {
   if (shuttingDown) return;
   shuttingDown = true;
   if (hybragMaintenanceTimer) clearInterval(hybragMaintenanceTimer);
+  if (documentImportTimer) clearInterval(documentImportTimer);
   console.log(`[self-hosted] received ${signal}; shutting down`);
 
   try {
-    await Promise.all([server.stop(), gateway?.stop(), hybragMaintenance]);
+    await Promise.all([server.stop(), gateway?.stop(), hybragMaintenance, documentImports]);
     sqlite.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     sqlite.close();
     console.log("[self-hosted] shutdown complete");

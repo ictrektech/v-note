@@ -10,6 +10,7 @@ type VosOAuth = {
 
 type VosPlatform = {
   api?: { v1000?: { oauth2?: VosOAuth } };
+  platform?: { openTab?: (options: { app: { id: string; page: string } }) => Promise<void> };
   getState?: () => Promise<{ locale?: unknown; theme?: unknown }>;
   broadcast?: {
     on: {

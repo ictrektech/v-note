@@ -147,7 +147,25 @@ export const HybragSettings = ({ user }: { user: AuthUser | null }) => {
     {user && <p>{t("hybrag.currentUser", { name: user.displayName || user.username })}</p>}
     <div role="status">{t(`hybrag.${connection}`)} {connection !== "checking" && connection !== "connected" && <Button variant="outline" size="sm" onClick={() => void discover()}>{t("hybrag.retry")}</Button>}</div>
     {connection==="connected"&&!backgroundCapable&&<p role="status">{t("hybrag.automaticUpgrade")}</p>}
-    <a className="underline" href="/#/app/com.ictrek.hybrag/hybrag" target="_blank" rel="noreferrer">{t("hybrag.source")}</a>
+    <a
+      className="underline"
+      href="/app/com.ictrek.hybrag/platform/knowledge-bases"
+      target="_blank"
+      rel="noreferrer"
+      onClick={async (event) => {
+        const platform = window.vos_platform?.platform;
+        if (!platform?.openTab || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        const fallback = event.currentTarget.href;
+        event.preventDefault();
+        try {
+          await platform.openTab({ app: { id: "com.ictrek.hybrag", page: "hybrag" } });
+        } catch (error) {
+          if ((error as { name?: string } | null)?.name !== "PlatformNotAuthenticatedError") {
+            window.location.assign(fallback);
+          }
+        }
+      }}
+    >{t("hybrag.source")}</a>
     <div className="flex items-center gap-3"><Switch checked={data.enabled} disabled={busy} onCheckedChange={(enabled) => { setData({ ...data, enabled }); markDirty(true); }} aria-label={t("hybrag.enabled")} /><span>{t("hybrag.enabled")}</span></div>
     <p className="text-slate-500">{t("hybrag.description")}</p>
     {data.enabled&&<p className="text-slate-500">{t("hybrag.backgroundConsent")}</p>}

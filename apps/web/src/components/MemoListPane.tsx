@@ -405,6 +405,7 @@ export const MemoListPane = ({
   onSyncMemos,
   onCreateMemo,
   onImportMarkdownFiles,
+  documentImportControls,
   isSyncingMemos,
   canSyncMemos,
   mobileListActionsOpen,
@@ -483,6 +484,7 @@ export const MemoListPane = ({
   onSyncMemos: () => void;
   onCreateMemo: () => void;
   onImportMarkdownFiles: (files: File[]) => void;
+  documentImportControls?: ReactNode;
   isSyncingMemos: boolean;
   canSyncMemos: boolean;
   mobileListActionsOpen: boolean;
@@ -1425,6 +1427,8 @@ export const MemoListPane = ({
           </m.div>
         )}
       </header>
+
+      {view !== "trash" && !selectionMode && documentImportControls}
 
       <div
         ref={setListScrollNode}

@@ -1,3 +1,5 @@
+import { DocumentImportControls } from "./DocumentImportControls";
+import { isVosBuild } from "@/lib/vos-mode";
 import { DesktopAttachmentWritebacks } from "./attachments/DesktopAttachmentWritebacks";
 import { useNoteImport } from "@/lib/note-import/use-note-import";
 import { NotebookAppearanceDialog } from "./dialogs/NotebookAppearanceDialog";
@@ -2650,6 +2652,15 @@ export const WorkspaceApp = ({
     }
   }, [clearMemoSelection, clearPendingCreatedMemo, focusDetachedMemo, navigateWorkspaceHome, setSelectedMemoId, setSelectedNotebookId]);
 
+  const handleOpenImportedMemo = useCallback((memoId: string, notebookId: string) => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["memos"] }),
+      queryClient.invalidateQueries({ queryKey: ["notebooks"] }),
+      queryClient.invalidateQueries({ queryKey: ["resources"] }),
+    ]);
+    handleOpenPluginNote(memoId, notebookId);
+  }, [handleOpenPluginNote, queryClient]);
+
   const handleOpenLinkedMemo = useMemoLinkNavigation({
     repository,
     navigationScope: JSON.stringify([
@@ -3577,6 +3588,14 @@ export const WorkspaceApp = ({
               onCancelMobileSearch={handleCancelMobileSearch}
               onCreateMemo={handleCreateMemo}
               onImportMarkdownFiles={(files) => void handleImportMarkdownFiles(files)}
+              documentImportControls={isVosBuild && !window.edgeeverDesktop?.isAvailable ? (
+                <DocumentImportControls
+                  key={localDataScope}
+                  scope={localDataScope}
+                  notebookId={canCreateMemo && isOnline ? createMemoNotebookId : null}
+                  onOpenMemo={handleOpenImportedMemo}
+                />
+              ) : undefined}
               onClearSelection={clearMemoSelection}
               onEnterSelectionMode={enterMemoSelectionMode}
               onReplaceSelection={replaceMemoSelection}

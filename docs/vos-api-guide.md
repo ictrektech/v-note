@@ -30,6 +30,14 @@ Only prose Markdown in the selected notebook trees is indexed. Embedded resource
 
 This is a private VOS app integration, not a V-Note API-token or MCP capability. Browser operations use the current VOS user proof from the VOS bridge. HybRAG uses the restricted integration credential issued through the VOS grant protocol. The integration routes under `/api/v1/integrations/hybrag/` and `/api/integrations/hybrag/` are internal contracts between the installed V-Note and HybRAG versions and are not a supported public third-party API.
 
+### Import Office and PDF as editable notes
+
+In the VOS Web workspace, select a notebook and click **Import Office / PDF** above its note list. Choose one DOCX, XLSX, PPTX or PDF file. Open **Import history** to check progress, retry a failure, or open the result. Conversion continues after you close the page. V-Note saves the extracted text, headings, lists, tables and supported images in a normal note and includes the original as a downloadable attachment. Use the original to check layout, spreadsheet formulas or slide positioning.
+
+Install a compatible HybRAG on the same VOS device and associate the same VOS account in HybRAG. Scanned PDFs use the associated tenant's configured OCR parser or default vision model. If the tenant uses a cloud OCR service, document data may be sent to that service. The per-file limit is 100 MiB or a lower limit imposed by the deployment. The chat attachment eight-page OCR limit does not apply. If a scanned page cannot be recognized, the import reports a failure. Update the OCR configuration or correct the file before retrying. Import needs neither a knowledge base nor an embedding model.
+
+The import endpoints are private VOS Web and app-to-app contracts. The existing public HTTP API and MCP still support reading and editing the resulting regular note and its resources with the applicable scopes.
+
 ## HTTP API
 
 Routes below are relative to the base URL in the table. JSON routes return `application/json`. A V-Note session is an interactive user's `edgeever_session` cookie or V-Note session Bearer value. An API token is a workspace-scoped integration credential. A VOS access token is accepted by the VOS browser exchange route and is a different credential. Notes, notebooks and tokens are scoped to the authenticated workspace. Instance administrators manage users and storage through the application, with each user's notes remaining in that user's workspace.

@@ -978,7 +978,12 @@ export const createMemoRecord = async (
   workspaceId: string,
   input: { notebookId: string; title?: string; contentJson?: unknown; contentMarkdown?: string; tags?: string[]; createdAt?: string; updatedAt?: string },
   actor: { actorType: "user" | "agent"; actorId: string | null },
-  actorLabel: string
+  actorLabel: string,
+  transaction?: {
+    memoId: string;
+    statements: import("./storage-contract").PreparedStatementAdapter[];
+    personalOwnerId: string;
+  },
 ): Promise<MemoDetail> => {
   // Reject a missing notebook before the batch. The memo insert is a SELECT
   // from notebooks, so a bad id used to write orphan content and then fail
@@ -995,7 +1000,7 @@ export const createMemoRecord = async (
   const title = normalizeMemoTitle(input.title);
   const excerpt = createExcerpt(contentText);
   const contentHash = await sha256(contentMarkdown + JSON.stringify(contentJson));
-  const id = createId("memo");
+  const id = transaction?.memoId ?? createId("memo");
   const now = isoNow();
   const createdAt = input.createdAt ?? now;
   const updatedAt = input.updatedAt ?? now;
@@ -1005,9 +1010,16 @@ export const createMemoRecord = async (
       .prepare(
         `INSERT INTO memos (
           id, workspace_id, notebook_id, title, excerpt, tags_json, created_by, updated_by, created_at, updated_at
-        ) SELECT ?, ?, id, ?, ?, ?, ?, ?, ?, ? FROM notebooks WHERE id = ? AND workspace_id = ? AND is_deleted = 0`
+        ) SELECT ?, ?, id, ?, ?, ?, ?, ?, ?, ? FROM notebooks WHERE id = ? AND workspace_id = ? AND is_deleted = 0
+        ${transaction ? `AND EXISTS (
+          SELECT 1 FROM workspace_members wm JOIN users u ON u.id=wm.user_id
+          JOIN user_identities i ON i.user_id=u.id AND i.provider='vos'
+          JOIN workspaces w ON w.id=wm.workspace_id AND w.is_personal=1
+          WHERE wm.workspace_id=notebooks.workspace_id AND wm.user_id=? AND wm.role='owner' AND u.is_disabled=0
+            AND NOT EXISTS (SELECT 1 FROM workspace_members peer WHERE peer.workspace_id=w.id AND peer.user_id<>wm.user_id)
+        )` : ""}`
       )
-      .bind(id, workspaceId, title, excerpt, JSON.stringify(tags), actorLabel, actorLabel, createdAt, updatedAt, input.notebookId, workspaceId),
+      .bind(id, workspaceId, title, excerpt, JSON.stringify(tags), actorLabel, actorLabel, createdAt, updatedAt, input.notebookId, workspaceId, ...(transaction ? [transaction.personalOwnerId] : [])),
     db
       .prepare(
         `INSERT INTO memo_contents (
@@ -1019,6 +1031,7 @@ export const createMemoRecord = async (
     auditStatement(db, actor.actorType, actor.actorId, "memo.create", "memo", id, {
       notebookId: input.notebookId,
     }),
+    ...(transaction?.statements ?? []),
   ]);
 
   const memo = await getMemoDetail(db, workspaceId, id);
