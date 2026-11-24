@@ -73,6 +73,10 @@ In the VOS Web note list, choose **Import Office / PDF**. The paired HybRAG conv
 
 ## HybRAG integration development
 
+The knowledge-base link in V-Note opens HybRAG through VOS for both pinned apps and apps in the drawer.
+
+V-Note 的知识库链接通过 VOS 打开 HybRAG，适用于已固定和位于应用抽屉的应用。
+
 明确的索引前模型拒绝会保留进度，修复 HybRAG 默认模型后可再次“立即同步”。旧版本
 遗留的 `hybrag_delivery_uncertain` 不能直接清除：先保存原同步设置产生新版本，待控制
 变更送达后再立即同步。旧请求会被版本围栏阻止；真正仍在处理的模型任务继续占用槽位，
