@@ -1,9 +1,5 @@
 # AGENTS.md
 
-## VOS Candidate Preflight
-
-- For requests to build a VOS candidate package or install a candidate build, use the shared [vos-preflight-package](../../.agents/skills/vos-preflight-package/SKILL.md) skill from the VAI workspace.
-
 本文件用于约束和指导参与本项目的 AI 代理与协作者。
 
 ## 文档约束
