@@ -9,6 +9,10 @@
 
 The gateway route is registered by the VOS package. Compose already maps host TCP `22710` to container HTTP `8787` for both CPU profiles. Add no second Docker mapping. A mobile device must be able to reach the gateway or LAN address. For access away from the LAN, use a reachable HTTPS gateway or VPN. A trusted certificate is required for native HTTPS clients; a browser exception for a self-signed certificate does not transfer to the app. Use the direct HTTP port only within a trusted network. The direct port exposes HTTP APIs and MCP. VOS passwords are accepted only through the HTTPS gateway. The VOS browser workspace requires the VOS iframe bridge.
 
+### VOS browser sign-in
+
+Open V-Note from the VOS App Drawer while signed in to VOS. If V-Note cannot verify your session, select **Retry** to start VOS sign-in again. If it still fails, check that you are signed in to VOS and reopen V-Note from the drawer. This browser behavior uses the existing `POST /api/v1/auth/vos` and `GET /api/v1/auth/session` contracts below.
+
 ### Native mobile sign-in and account isolation
 
 1. Install **EdgeEver**: [iPhone App Store](https://apps.apple.com/us/app/edgeever/id6792625631) · [Android Google Play](https://play.google.com/store/apps/details?id=org.edgeever.mobile).

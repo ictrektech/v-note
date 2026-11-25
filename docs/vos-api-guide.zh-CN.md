@@ -9,6 +9,10 @@
 
 VOS 安装包已注册网关路由，同时把宿主机 TCP `22710` 映射到容器 HTTP `8787`，AMD64 与 ARM64 均如此。设备无需另配 Docker 端口映射。手机须能访问 VOS 网关或局域网地址；外网访问用可达的 HTTPS 网关或 VPN。原生客户端要求 HTTPS 证书受手机信任，浏览器手工放行证书不会改变客户端的信任状态。直连 HTTP 端口可用于可信网络内的 API 和 MCP，不能使用 VOS 密码登录；网页工作区需要 VOS iframe 桥接。
 
+### VOS 网页登录
+
+登录 VOS 后，从应用抽屉打开 V-Note。若 V-Note 无法验证会话，点击「重试」重新通过 VOS 登录。若仍失败，请确认已登录 VOS，再从应用抽屉打开 V-Note。此网页行为沿用下文的 `POST /api/v1/auth/vos` 和 `GET /api/v1/auth/session` 接口。
+
 ### 手机原生应用登录
 
 1. 安装 **EdgeEver**：[iPhone App Store](https://apps.apple.com/us/app/edgeever/id6792625631) · [Android Google Play](https://play.google.com/store/apps/details?id=org.edgeever.mobile)。

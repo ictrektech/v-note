@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { PwaUpdateNotice } from "@/components/PwaUpdateNotice";
 import { PwaInstallProvider } from "@/components/PwaInstallContext";
 import { PwaIosPrompt } from "@/components/PwaIosPrompt";
+import { VosSignInStatus } from "@/components/VosAuthGate";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -19,7 +20,8 @@ import { classifyLoginError, getLoginProblemMessageKey } from "@/lib/login-error
 import { EVERNOTE_MIGRATION_PATH } from "@/lib/routes";
 import { syncPublishedNoteBodyFont } from "@/lib/published-note-body-font";
 import { getNoteWindowMemoId } from "@/lib/desktop-note-windows";
-import { isVosBuild } from "@/lib/vos-mode";
+import { isVosBuild, isVosLocalLogin } from "@/lib/vos-mode";
+import { prefersChineseContent } from "@/lib/bilingual-content-locale";
 import { ApiRequestError, getMfaChallenge } from "@edgeever/client";
 import type { AuthSession, MfaChallenge } from "@edgeever/shared";
 import { twoFactorErrorKey } from "@/components/two-factor/TwoFactorSteps";
@@ -265,6 +267,13 @@ const AuthenticatedWorkspace = ({ siteManagement = false }: { siteManagement?: b
   }
 
   if (!session?.authenticated) {
+    if (isVosBuild && !isVosLocalLogin()) {
+      const detail = prefersChineseContent(i18n.resolvedLanguage)
+        ? "V-Note 会话无效或暂时无法验证。重试将重新通过 VOS 登录。"
+        : "The V-Note session is invalid or could not be verified. Retry to sign in again through VOS.";
+      return <VosSignInStatus error={detail} onRetry={() => window.location.reload()} />;
+    }
+
     return (
       <Suspense fallback={<AuthLoadingScreen />}>
         <LoginScreen

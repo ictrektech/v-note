@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { sha256 } from "@noble/hashes/sha2.js";
+import { useTranslation } from "react-i18next";
+import { prefersChineseContent } from "@/lib/bilingual-content-locale";
 import { getAppBaseUrl, isVosBuild, isVosLocalLogin, VOS_APP_ID } from "@/lib/vos-mode";
 import { getOrCreateClientDeviceId } from "@/lib/api";
 
@@ -140,20 +142,29 @@ export const VosAuthGate = ({ children }: { children: ReactNode }) => {
 
   if (ready) return children;
 
+  return <VosSignInStatus error={error} onRetry={() => setAttempt((value) => value + 1)} />;
+};
+
+export const VosSignInStatus = ({ error, onRetry }: { error: string | null; onRetry: () => void }) => {
+  const { i18n } = useTranslation();
+  const zh = prefersChineseContent(i18n.resolvedLanguage);
+  const title = error
+    ? (zh ? "无法登录 V-Note" : "Could not sign in to V-Note")
+    : (zh ? "正在通过 VOS 登录 V-Note" : "Signing in to V-Note through VOS");
   return (
     <main className="flex h-[100dvh] items-center justify-center bg-slate-50 px-6 text-center text-slate-700">
       <div role={error ? "alert" : "status"} aria-live="polite" className="max-w-md">
-        <h1 className="text-sm font-semibold">{error ? "无法登录 V-Note" : "正在通过 VOS 登录 V-Note"}</h1>
+        <h1 className="text-sm font-semibold">{title}</h1>
         <p className="mt-2 text-xs leading-5 text-slate-500">
-          {error || "正在校验 VOS 身份，请稍候…"}
+          {error || (zh ? "正在校验 VOS 身份，请稍候…" : "Verifying your VOS account…")}
         </p>
         {error ? (
           <button
             type="button"
             className="mt-5 rounded-md bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-            onClick={() => setAttempt((value) => value + 1)}
+            onClick={onRetry}
           >
-            重试
+            {zh ? "重试" : "Retry"}
           </button>
         ) : null}
       </div>
