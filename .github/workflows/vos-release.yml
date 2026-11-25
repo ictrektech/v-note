@@ -130,15 +130,11 @@ jobs:
           cat > "$RUNNER_TEMP/release-notes.md" <<'NOTES'
           ## 主要更新
 
-          - VOS 网页端支持将 Word、Excel、PowerPoint 和 PDF 转成可编辑笔记，保留原件附件，并可在导入记录中查看进度。转换需要 HybRAG 0.1.85 或更新版本。
-          - 文档解析完成后会自动打开结果并更新笔记列表，重试导入时也会继续显示进度。
-          - 修复 HybRAG 位于应用抽屉时，从集成设置打开知识库出现 404 的问题。
+          - VOS 网页工作区无法验证会话时，显示 VOS 登录提示。点击「重试」即可重新通过 VOS 登录。
 
           ## Key Changes
 
-          - Import Word, Excel, PowerPoint, and PDF files as editable notes in VOS Web. The original file remains attached, and import history shows conversion progress. Conversion requires HybRAG 0.1.85 or later.
-          - Finished imports open automatically and update the note list; retried imports keep showing progress.
-          - Fixed a 404 when opening HybRAG knowledge bases from integration settings while HybRAG is in the App Drawer.
+          - When the VOS web workspace cannot verify your session, select Retry to sign in again through VOS.
           NOTES
       - name: Connect App Store
         env:
